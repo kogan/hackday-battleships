@@ -1,1 +1,2 @@
-# hackday-battleships
+# Battleships Hackday
+

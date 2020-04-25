@@ -161,3 +161,26 @@ Response
 |Submarine|3|
 |Frigate|4|
 |Destroyer|5|
+
+*Coordinate system*
+
+Consider the following board:
+
+|   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 0 |   |   |   |   |   |   |   |   |   |   |
+| 1 |   |   | S | S | S |   |   |   |   |   |
+| 2 |   |   |   |   |   |   |   |   |   |   |
+| 3 |   |   |   |   |   |   |   |   |   |   |
+| 4 |   |   |   |   |   |   |   |   |   |   |
+| 5 |   |   |   |   |   |   | F |   |   |   |
+| 6 |   |   |   |   |   |   | F |   |   |   |
+| 7 |   |   |   |   |   |   | F |   |   |   |
+| 8 |   |   |   |   |   |   | F |   |   |   |
+| 9 | P | P |   |   |   |   |   |   |   |   |
+
+The `Submarine` is at position `(x=2, y=1, length=3, orientation=HORIZONTAL)`
+
+The `Frigate` is at position `(x=6, y=5, length=4, orientation=VERTICAL)`
+
+The `Patrol Boat` is at position `(x=0, y=9, length=2 orientation=HORIZONTAL)`

@@ -105,29 +105,6 @@ six = ">=1.2"
 
 [[package]]
 category = "main"
-description = "Support for many storage backends in Django"
-name = "django-storages"
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-version = "1.9.1"
-
-[package.dependencies]
-Django = ">=1.11"
-
-[package.dependencies.google-cloud-storage]
-optional = true
-version = ">=1.15.0"
-
-[package.extras]
-azure = ["azure-storage-blob (>=1.3.1,<12.0.0)"]
-boto3 = ["boto3 (>=1.4.4)"]
-dropbox = ["dropbox (>=7.2.1)"]
-google = ["google-cloud-storage (>=1.15.0)"]
-libcloud = ["apache-libcloud"]
-sftp = ["paramiko"]
-
-[[package]]
-category = "main"
 description = "Web APIs for Django, made easy."
 name = "djangorestframework"
 optional = false
@@ -154,6 +131,10 @@ requests = ">=2.18.0,<3.0.0dev"
 setuptools = ">=34.0.0"
 six = ">=1.10.0"
 
+[package.dependencies.grpcio]
+optional = true
+version = ">=1.8.2,<2.0dev"
+
 [package.extras]
 grpc = ["grpcio (>=1.8.2,<2.0dev)"]
 grpcgcp = ["grpcio-gcp (>=0.2.2)"]
@@ -165,7 +146,7 @@ description = "Google Authentication Library"
 name = "google-auth"
 optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
-version = "1.14.0"
+version = "1.14.2"
 
 [package.dependencies]
 cachetools = ">=2.0.0,<5.0"
@@ -220,33 +201,6 @@ version = ">=1.14.0,<2.0.0dev"
 
 [[package]]
 category = "main"
-description = "Google Cloud Storage API client library"
-name = "google-cloud-storage"
-optional = false
-python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
-version = "1.27.0"
-
-[package.dependencies]
-google-auth = ">=1.11.0,<2.0dev"
-google-cloud-core = ">=1.2.0,<2.0dev"
-google-resumable-media = ">=0.5.0,<0.6dev"
-
-[[package]]
-category = "main"
-description = "Utilities for Google Media Downloads and Resumable Uploads"
-name = "google-resumable-media"
-optional = false
-python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
-version = "0.5.0"
-
-[package.dependencies]
-six = "*"
-
-[package.extras]
-requests = ["requests (>=2.18.0,<3.0.0dev)"]
-
-[[package]]
-category = "main"
 description = "Common protobufs used in Google APIs"
 name = "googleapis-common-protos"
 optional = false
@@ -255,6 +209,10 @@ version = "1.51.0"
 
 [package.dependencies]
 protobuf = ">=3.6.0"
+
+[package.dependencies.grpcio]
+optional = true
+version = ">=1.0.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.0.0)"]
@@ -299,7 +257,7 @@ description = "IPython: Productive Interactive Computing"
 name = "ipython"
 optional = false
 python-versions = ">=3.6"
-version = "7.13.0"
+version = "7.14.0"
 
 [package.dependencies]
 appnope = "*"
@@ -315,7 +273,7 @@ setuptools = ">=18.5"
 traitlets = ">=4.2"
 
 [package.extras]
-all = ["numpy (>=1.14)", "testpath", "notebook", "nose (>=0.10.1)", "nbconvert", "requests", "ipywidgets", "qtconsole", "ipyparallel", "Sphinx (>=1.3)", "pygments", "nbformat", "ipykernel"]
+all = ["nose (>=0.10.1)", "Sphinx (>=1.3)", "testpath", "nbformat", "ipywidgets", "qtconsole", "numpy (>=1.14)", "notebook", "ipyparallel", "ipykernel", "pygments", "requests", "nbconvert"]
 doc = ["Sphinx (>=1.3)"]
 kernel = ["ipykernel"]
 nbconvert = ["nbconvert"]
@@ -452,7 +410,7 @@ description = "World timezone definitions, modern and historical"
 name = "pytz"
 optional = false
 python-versions = "*"
-version = "2019.3"
+version = "2020.1"
 
 [[package]]
 category = "main"
@@ -560,7 +518,7 @@ version = "5.0.1"
 brotli = ["brotli"]
 
 [metadata]
-content-hash = "8e49d222837bd5b82506d03a44639f5c9fd484e18c7fde3c3d86e94a686bd5c4"
+content-hash = "1eda5d7546ccad3704b80fc8845f56122ddad48285ec79946cbe3dab601721e4"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -608,10 +566,6 @@ django-extensions = [
     {file = "django-extensions-2.2.9.tar.gz", hash = "sha256:2f81b618ba4d1b0e58603e25012e5c74f88a4b706e0022a3b21f24f0322a6ce6"},
     {file = "django_extensions-2.2.9-py2.py3-none-any.whl", hash = "sha256:b19182d101a441fe001c5753553a901e2ef3ff60e8fbbe38881eb4a61fdd17c4"},
 ]
-django-storages = [
-    {file = "django-storages-1.9.1.tar.gz", hash = "sha256:a59e9923cbce7068792f75344ed7727021ee4ac20f227cf17297d0d03d141e91"},
-    {file = "django_storages-1.9.1-py2.py3-none-any.whl", hash = "sha256:3103991c2ee8cef8a2ff096709973ffe7106183d211a79f22cf855f33533d924"},
-]
 djangorestframework = [
     {file = "djangorestframework-3.11.0-py3-none-any.whl", hash = "sha256:05809fc66e1c997fd9a32ea5730d9f4ba28b109b9da71fccfa5ff241201fd0a4"},
     {file = "djangorestframework-3.11.0.tar.gz", hash = "sha256:e782087823c47a26826ee5b6fa0c542968219263fb3976ec3c31edab23a4001f"},
@@ -621,8 +575,8 @@ google-api-core = [
     {file = "google_api_core-1.17.0-py2.py3-none-any.whl", hash = "sha256:c0e430658ed6be902d7ba7095fb0a9cac810270d71bf7ac4484e76c300407aae"},
 ]
 google-auth = [
-    {file = "google-auth-1.14.0.tar.gz", hash = "sha256:9813eaae335c45e8a1b5d274610fa961ac8aa650568d1cfb005b2c07da6bde6c"},
-    {file = "google_auth-1.14.0-py2.py3-none-any.whl", hash = "sha256:050f1713142fa57d4b34f4fd4a998210e330f6a29c84c6ce359b928cc11dc8ad"},
+    {file = "google-auth-1.14.2.tar.gz", hash = "sha256:2243db98475f7f2033c41af5185333cbf13780e8f5f96eaadd997c6f34181dcc"},
+    {file = "google_auth-1.14.2-py2.py3-none-any.whl", hash = "sha256:23cfeeb71d98b7f51cd33650779d35291aeb8b23384976d497805d12eefc6e9b"},
 ]
 google-cloud-core = [
     {file = "google-cloud-core-1.3.0.tar.gz", hash = "sha256:878f9ad080a40cdcec85b92242c4b5819eeb8f120ebc5c9f640935e24fc129d8"},
@@ -635,14 +589,6 @@ google-cloud-datastore = [
 google-cloud-secret-manager = [
     {file = "google-cloud-secret-manager-0.2.0.tar.gz", hash = "sha256:47ec813cf3f42d42189077d8f4cfe2396243b2a67eda952483ff12e9db6eadb0"},
     {file = "google_cloud_secret_manager-0.2.0-py2.py3-none-any.whl", hash = "sha256:5fb62556141677c04576a6eb4984c69234bfc315735256c3a87aff0bcafb3c54"},
-]
-google-cloud-storage = [
-    {file = "google-cloud-storage-1.27.0.tar.gz", hash = "sha256:62d5efa529fb39ae01504698b7053f2a009877d0d4b3c8f297e3e68c8c38a117"},
-    {file = "google_cloud_storage-1.27.0-py2.py3-none-any.whl", hash = "sha256:3af167094142a61b1bda3489da4a724e55f2703b236431b27f71c9936d94f8d8"},
-]
-google-resumable-media = [
-    {file = "google-resumable-media-0.5.0.tar.gz", hash = "sha256:2a8fd188afe1cbfd5998bf20602f76b0336aa892de88fe842a806b9a3ed78d2a"},
-    {file = "google_resumable_media-0.5.0-py2.py3-none-any.whl", hash = "sha256:b86140d5a0b6d290084b11bde90ee9aecad357ba0e0d67388d016b8340320927"},
 ]
 googleapis-common-protos = [
     {file = "googleapis-common-protos-1.51.0.tar.gz", hash = "sha256:013c91704279119150e44ef770086fdbba158c1f978a6402167d47d5409e226e"},
@@ -688,8 +634,8 @@ idna = [
     {file = "idna-2.9.tar.gz", hash = "sha256:7588d1c14ae4c77d74036e8c22ff447b26d0fde8f007354fd48a7814db15b7cb"},
 ]
 ipython = [
-    {file = "ipython-7.13.0-py3-none-any.whl", hash = "sha256:eb8d075de37f678424527b5ef6ea23f7b80240ca031c2dd6de5879d687a65333"},
-    {file = "ipython-7.13.0.tar.gz", hash = "sha256:ca478e52ae1f88da0102360e57e528b92f3ae4316aabac80a2cd7f7ab2efb48a"},
+    {file = "ipython-7.14.0-py3-none-any.whl", hash = "sha256:5b241b84bbf0eb085d43ae9d46adf38a13b45929ca7774a740990c2c242534bb"},
+    {file = "ipython-7.14.0.tar.gz", hash = "sha256:f0126781d0f959da852fb3089e170ed807388e986a8dd4e6ac44855845b0fb1c"},
 ]
 ipython-genutils = [
     {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
@@ -807,8 +753,8 @@ pygments = [
     {file = "Pygments-2.6.1.tar.gz", hash = "sha256:647344a061c249a3b74e230c739f434d7ea4d8b1d5f3721bc0f3558049b38f44"},
 ]
 pytz = [
-    {file = "pytz-2019.3-py2.py3-none-any.whl", hash = "sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d"},
-    {file = "pytz-2019.3.tar.gz", hash = "sha256:b02c06db6cf09c12dd25137e563b31700d3b80fcc4ad23abb7a315f2789819be"},
+    {file = "pytz-2020.1-py2.py3-none-any.whl", hash = "sha256:a494d53b6d39c3c6e44c3bec237336e14305e4f29bbf800b599253057fbb79ed"},
+    {file = "pytz-2020.1.tar.gz", hash = "sha256:c35965d010ce31b23eeb663ed3cc8c906275d6be1a34393a1d73a41febf4a048"},
 ]
 requests = [
     {file = "requests-2.23.0-py2.py3-none-any.whl", hash = "sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee"},

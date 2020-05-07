@@ -1,10 +1,12 @@
-import argparse
 import itertools
+import json
 import operator
+import os
 import random
 import sys
 import time
 from dataclasses import asdict, dataclass
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urljoin
 
 import requests
@@ -172,14 +174,26 @@ def play_game(url: str, token: str, game_id: str):
     phase_attack(session, url, game_id, config)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Play a battleships game")
-    parser.add_argument("--token", dest="token", help="Auth Token", required=True)
-    parser.add_argument("--game-id", dest="game_id", help="Game ID", required=True)
-    parser.add_argument("--url", dest="url", help="Base URL of server", required=True)
-    args = parser.parse_args()
-    return play_game(args.url, args.token, args.game_id)
+class Handler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        try:
+            content_length = int(self.headers["Content-Length"])
+            body = json.loads(self.rfile.read(content_length).decode("utf-8"))
+        except Exception:
+            self.send_response(400, "Invalid Request")
+            self.end_headers()
+            return
+        play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+
+
+def run():
+    server_address = ("", int(sys.argv[1]))
+    httpd = HTTPServer(server_address, Handler)
+    httpd.serve_forever()
 
 
 if __name__ == "__main__":
-    main()
+    run()

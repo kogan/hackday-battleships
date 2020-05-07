@@ -50,4 +50,4 @@ ENV PATH "/app/.venv/bin:${PATH}"
 WORKDIR /app/code
 
 RUN python manage.py collectstatic --noinput
-CMD waitress-serve --listen=*:$PORT kams.wsgi:application
+CMD waitress-serve --listen=*:$PORT cloudships.wsgi:application

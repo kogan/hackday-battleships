@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Game, GameMove, GamePlayer, GameSetup
+from .models import BotServer, Game, GameConfig, GameMove, GamePlayer, GameSetup
 
 
 @admin.register(Game)
@@ -20,4 +20,14 @@ class GameMoveAdmin(admin.ModelAdmin):
 
 @admin.register(GameSetup)
 class GameSetupAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(BotServer)
+class BotServerAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(GameConfig)
+class GameConfigAdmin(admin.ModelAdmin):
     pass

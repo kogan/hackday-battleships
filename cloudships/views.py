@@ -13,7 +13,7 @@ class ShipConfigSerializer(serializers.Serializer):
 
 class GameSerializer(serializers.Serializer):
     board_size = serializers.IntegerField(default=10, required=False)
-    ship_config = ShipConfigSerializer(many=True, required=True)
+    ship_config = ShipConfigSerializer(many=True, required=True, source="config.ships")
 
 
 class GameStateSerializer(GameSerializer):
@@ -55,6 +55,15 @@ class ShipSerializer(serializers.Serializer):
 class AttackSerializer(serializers.Serializer):
     x = serializers.IntegerField(required=True)
     y = serializers.IntegerField(required=True)
+
+
+class FinishedPlayerSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    state = serializers.CharField(required=True)
+
+
+class FinishGameSerializer(serializers.Serializer):
+    players = FinishedPlayerSerializer(many=True)
 
 
 @api_view(["POST"])
@@ -114,5 +123,18 @@ def attack(request, game_id=None):
             game_id, request.user, form.validated_data["x"], form.validated_data["y"]
         )
         return JsonResponse(dict(result=result, **form.validated_data))
+    except GameException as e:
+        return JsonResponse(dict(errors=[str(e)]), status=400)
+
+
+@api_view(["POST"])
+def finish_game(request, game_id=None):
+    # todo: authenticate this endpoint!
+    form = FinishGameSerializer(data=request.data)
+    if not form.is_valid():
+        return JsonResponse(dict(errors=form.errors), status=400)
+    try:
+        Game.objects.finish_game(game_id, form.validated_data["players"])
+        return JsonResponse(dict())
     except GameException as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)

@@ -9,6 +9,8 @@ from django.contrib.auth.models import User
 from django.contrib.postgres.fields import JSONField
 from django.db import models, transaction
 
+from . import dispatcher
+
 
 class GameException(Exception):
     pass
@@ -32,6 +34,12 @@ class AttackEnum(str, Enum):
     SUNK = "SUNK"
 
 
+class PlayerStates(models.TextChoices):
+    PLAYING = "playing"
+    FINISHED = "finished"
+    DNF = "dnf"
+
+
 @dataclass
 class ShipConfig(object):
     length: int
@@ -52,8 +60,13 @@ class Move(object):
     result: AttackEnum
 
 
-class GameManager(models.Manager):
-    def create_game(self, board_size: int, ship_configs: t.Sequence[ShipConfig]):
+class BotServer(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    server_address = models.CharField(max_length=100)
+
+
+class GameConfigManager(models.Manager):
+    def create_config(self, board_size: int, ship_configs: t.Sequence[ShipConfig]):
         if not board_size > 0:
             raise GameException("Board size must be > 0")
         # todo: find a better packing algorithm
@@ -62,12 +75,26 @@ class GameManager(models.Manager):
             raise GameException("Must have at least 1 ship")
         if consumed_squares > board_size * board_size:
             raise GameException(f"Not enough empty tiles {consumed_squares}")
-        return Game.objects.create(
-            board_size=board_size,
-            state=Game.States.JOIN_PHASE,
-            ship_config=[cfg.asdict() for cfg in ship_configs],
+        return GameConfig.objects.create(
+            board_size=board_size, ship_config=[cfg.asdict() for cfg in ship_configs],
         )
 
+    def start_game(self, config_id, server_1: BotServer, server_2: BotServer):
+        game = Game.objects.create(state=GameStates.JOIN_PHASE, config_id=config_id)
+        dispatcher.dispatch(game, server_1, server_2)
+
+
+class GameConfig(models.Model):
+    board_size = models.IntegerField()
+    ship_config = JSONField()
+    objects = GameConfigManager()
+
+    @property
+    def ships(self) -> t.List[ShipConfig]:
+        return [ShipConfig(**cfg) for cfg in self.ship_config]
+
+
+class GameManager(models.Manager):
     @transaction.atomic
     def join_game(self, game_id: uuid.UUID, player: User) -> "Game":
         qs = self.get_queryset().filter(pk=game_id, state=Game.States.JOIN_PHASE)
@@ -85,19 +112,29 @@ class GameManager(models.Manager):
             game.save()
         return game
 
+    def finish_game(self, game_id, players):
+        game = (
+            Game.objects.filter(id=game_id)
+            .prefetch_related(models.Prefetch("players", to_attr="prefetched_players"))
+            .first()
+        )
+        if game is None:
+            raise GameException("Game not found")
+        player_map = {player["username"]: player["state"] for player in players}
+        with transaction.atomic():
+            for player in game.prefetched_players:
+                player.state = player_map[player.player.username]
+                player.save()
+            game.state = GameStates.FINISHED
+            game.save()
+
 
 class Game(models.Model):
     States = GameStates
-
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
-    board_size = models.IntegerField()
-    ship_config = JSONField()
     state = models.CharField(max_length=20, choices=States.choices)
+    config = models.ForeignKey(GameConfig, on_delete=models.CASCADE)
     objects = GameManager()
-
-    @property
-    def config(self) -> t.List[ShipConfig]:
-        return [ShipConfig(**cfg) for cfg in self.ship_config]
 
     @cached_property
     def move_stream(self) -> t.List[Move]:
@@ -199,7 +236,7 @@ class GamePlayerQuerySet(models.QuerySet):
         with transaction.atomic():
             game_player = (
                 GamePlayer.objects.filter(pk=game_player.pk)
-                .select_related("game")
+                .select_related("game", "game__config")
                 .select_for_update(skip_locked=True, of=("self",))
                 .first()
             )
@@ -209,7 +246,8 @@ class GamePlayerQuerySet(models.QuerySet):
             # validate ship config.
             occupied_squares: t.Set[t.Tuple[int, int]] = set()
             required_ships = {
-                cfg.length: dict(expected=cfg.count, count=0) for cfg in game_player.game.config
+                cfg.length: dict(expected=cfg.count, count=0)
+                for cfg in game_player.game.config.ships
             }
             ship_objs = [GameSetup(player=game_player, **ship) for ship in ships]
             for i, ship in enumerate(ship_objs):
@@ -217,7 +255,7 @@ class GamePlayerQuerySet(models.QuerySet):
                 squares = ship.occupied_squares
                 # 'cause it's a square we can do cool square arithmetic
                 all_points = set(itertools.chain.from_iterable(point for point in squares))
-                if min(all_points) < 0 or max(all_points) >= game_player.game.board_size:
+                if min(all_points) < 0 or max(all_points) >= game_player.game.config.board_size:
                     raise GameException(f"Ship[{i}] is out of bounds")
                 if occupied_squares.intersection(squares):
                     raise GameException(f"Ship[{i}] is overlapping another ship")
@@ -240,7 +278,8 @@ class GamePlayerQuerySet(models.QuerySet):
             .in_phase(Game.States.ATTACK_PHASE)
             .annotate(
                 in_bounds=models.ExpressionWrapper(
-                    models.Q(game__board_size__gt=x) & models.Q(game__board_size__gt=y),
+                    models.Q(game__config__board_size__gt=x)
+                    & models.Q(game__config__board_size__gt=y),
                     output_field=models.BooleanField(),
                 )
             )
@@ -277,6 +316,9 @@ class GamePlayerQuerySet(models.QuerySet):
 class GamePlayer(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="players")
     player = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    state = models.CharField(
+        choices=PlayerStates.choices, max_length=16, default=PlayerStates.PLAYING
+    )
     objects = GamePlayerQuerySet.as_manager()
 
 

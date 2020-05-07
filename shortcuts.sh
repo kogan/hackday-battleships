@@ -40,7 +40,7 @@ case "$cmd" in
         ;;
     root) docker-compose run --rm --user 0 "${1:-django}" bash
         ;;
-    psql) docker-compose exec db psql -U postgres kams
+    psql) docker-compose exec db psql -U postgres cloudships
         ;;
     manage) docker-compose run --rm django python -Wall manage.py "$@"
         ;;

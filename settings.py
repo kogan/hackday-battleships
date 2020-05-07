@@ -16,7 +16,6 @@ if not all(k in os.environ.keys() for k in set(mandatory_settings)):
 
 env = environ.Env(DEBUG=(bool, False))
 
-env.read_env(os.environ.get("ENV_PATH", "dev.env"))
 
 root = environ.Path(__file__) - 3
 SITE_ROOT = root()
@@ -37,7 +36,7 @@ if "CURRENT_HOST" in os.environ:
             h = h.split("://")[1]
         HOSTS.append(h)
 else:
-    HOSTS = ["localhost"]
+    HOSTS = ["django", "localhost"]
 
 ALLOWED_HOSTS = HOSTS
 
@@ -130,3 +129,5 @@ USE_TZ = True
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
 }
+
+DISPATCH_URL = env("DISPATCH_URL", default="http:///")

@@ -2,28 +2,27 @@ version: '3'
 
 services:
   db:
-    image: postgres:alpine
+    image: postgres:11.1
     environment:
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: cloudships
       POSTGRES_DB: cloudships
     volumes:
-      - dev_data:/var/lib/postgresql/data
-  web:
+      - pg_data:/var/lib/postgresql/data
+  django:
     build: .
     environment:
         DEBUG: "true"
-        DATABASE_URL: postgres://postgres:password@db:5432/cloudships
-        GS_BUCKET_NAME:
-        CURRENT_HOST: localhost
+        DATABASE_URL: postgres://postgres:cloudships@db:5432/cloudships
         SECRET_KEY: a-secret-key
-    command: python manage.py runserver 0.0.0.0:8080
+        PORT: 8645
+    command: python manage.py runserver 0.0.0.0:8645
     working_dir: /app/code
     volumes:
       - .:/app/code
     ports:
-      - "8080:8080"
+      - "8645:8645"
     depends_on:
       - db
 
 volumes:
-    dev_data:
+    pg_data:

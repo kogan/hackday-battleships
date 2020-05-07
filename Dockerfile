@@ -28,16 +28,14 @@ RUN poetry install --no-root ${PRODUCTION:+--no-dev}
 
 
 # put everything together
-#
 # Copy deps over from previous layer, and run the app.
 
 FROM python:3.8-slim
 WORKDIR /app
 
-COPY . ./code
-
 COPY --from=pydeps /app/.venv /app/.venv/
 
+COPY . ./code
 # Explicitly put our code on PYTHONPATH to avoid having to install poetry and
 # activiate it on this layer.
 ENV PYTHONPATH=/app/code
@@ -49,4 +47,7 @@ ENV PYTHONPATH=/app/code
 ENV VIRTUAL_ENV /app/.venv
 ENV PATH "/app/.venv/bin:${PATH}"
 
-CMD waitress-serve --listen=*:$PORT cloudships.wsgi:application
+WORKDIR /app/code
+
+RUN python manage.py collectstatic --noinput
+CMD waitress-serve --listen=*:$PORT kams.wsgi:application

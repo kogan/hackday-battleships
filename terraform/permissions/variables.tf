@@ -6,12 +6,13 @@ variable "project" {
 
 variable "service" {
   type        = string
+  default     = "battleships-app"
   description = "Name of the service"
 }
 
 variable "region" {
   type    = string
-  default = "us-central1"
+  default = "asia-northeast1"
 }
 
 

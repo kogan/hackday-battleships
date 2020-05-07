@@ -5,11 +5,12 @@ variable "project" {
 
 variable "service" {
   description = "Name of the service"
+  default     = "battleships-db"
   type        = string
 }
 
 variable "region" {
-  default = "us-central1"
+  default = "asia-northeast1"
   type    = string
 }
 
@@ -17,4 +18,3 @@ variable "instance_name" {
   description = "Name of the postgres instance (PROJECT_ID:REGION:INSTANCE_NAME))"
   type        = string
 }
-

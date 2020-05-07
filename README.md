@@ -52,7 +52,7 @@ For a visualisation of how the setup works, play around with [this](http://en.ba
  - 4:30pm: begin battles
  - 5:00pm: discuss strategies
  - 5:30pm: Head ~~to the pub~~ back into self isolation
- 
+
 ## Engine API
 
 ### Overview
@@ -62,29 +62,29 @@ A Game can be in a number of states:
  - setup
  - attack
  - finished
- 
+
 #### Join phase
  - Users are able to join this game.
  - A User cannot join a game they've already joined (can't play against yourself).
  - Once a second User has joined, the Game automatically moves to the `setup` phase.
- 
+
 #### Setup phase
  - Users may place ships
  - Once both players have placed their ships, the Game automatically moves to the `attack` phase.
- 
+
 #### Attack phase
 Attacks are asynchronous. You won't see what your opponent plays until after the game is complete.
 
  - Users may start their attacks
  - Once both players have found all enemy ships, the Game automatically moves to the `finished` phase.
- 
+
 #### Finished phased
  - Users may query the Game to see who won
 
 ### Endpoints
 
 #### Create a game
-`POST /api/game/create/` 
+`POST /api/game/create/`
 
 Request
 
@@ -110,6 +110,23 @@ Response
 
 ### Query game state
 `GET /api/game/<game_id/`
+
+Response
+
+```
+{
+  state: "join"|"setup"|"attack"|"finished"
+  id: String
+  moves: Optional[
+  {
+    x: Integer
+    y: Integer
+    player: String
+    result: String
+  }]
+  is_draw: Optional[Boolean]
+  loser: Optional[String]
+```
 
 #### Join a game
 `POST /api/game/<game_id>/join/`

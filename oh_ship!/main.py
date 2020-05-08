@@ -184,6 +184,7 @@ def phase_attack(session, url, game_id, config):
         if response["result"] == "MISS":
             board_state[y][x] = CoordinateState.MISS
         else:
+            board_state[y][x] = CoordinateState.HIT
             if response["result"] == "SUNK":
                 # Out of ship found mode
                 ship_found = False
@@ -194,7 +195,6 @@ def phase_attack(session, url, game_id, config):
                     # Move to ship found mode
                     ship_found = True
                     ship_hit = (x, y)
-            board_state[y][x] = CoordinateState.HIT
             mark_hit_on_heatmap(x, y)
 
             num_hit += 1
@@ -345,11 +345,11 @@ def mark_sunk(board_state: List[List[CoordinateState]], x: int, y: int):
 
     max_x = min(len(board_state[0]) - 1, boat_max_x + 1)
     max_y = min(len(board_state) - 1, boat_max_y + 1)
-    min_x = max(0, boat_max_x - 1)
-    min_y = max(0, boat_max_y - 1)
+    min_x = max(0, boat_min_x - 1)
+    min_y = max(0, boat_min_y - 1)
 
-    for cx in range(min_x, max_x):
-        for cy in range(min_y, max_y):
+    for cx in range(min_x, max_x + 1):
+        for cy in range(min_y, max_y + 1):
             if board_state[cy][cx] == CoordinateState.UNKNOWN:
                 board_state[cy][cx] = CoordinateState.BLOCKED
 

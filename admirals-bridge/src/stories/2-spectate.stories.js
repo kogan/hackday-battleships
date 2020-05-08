@@ -27,7 +27,9 @@ export const BoardDisplayDummy = () => (
 )
 
 const samplePlayerState = stateToBoard([{"x":0,"y":0,"player":"player1","result":"HIT"},
-                                        {"x":0,"y":5,"player":"player1","result":"SUNK"}], "player1")
+                                        {"x":0,"y":5,"player":"player1","result":"SUNK"},
+                                        {"x":3,"y":3,"player":"player1","result":"MISS"}
+                                    ], "player1")
 
 export const BoardDisplayWithState = () => (
     <DisplayPlayer moves={samplePlayerState}/>

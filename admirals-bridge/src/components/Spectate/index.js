@@ -17,7 +17,7 @@ const SunkCell = styled.div`
   height: 100%;
 `
 const DefaultCell = styled.div`
-    background-color: green;
+    background-color: white;
     width: 100%;
     height: 100%;
 `

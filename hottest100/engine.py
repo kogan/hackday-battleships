@@ -338,7 +338,8 @@ class TestCoordinator(Coordinator):
         self.attack_map = attack_map
 
     def print_attack(self, point: Point, response: AttackResponse):
-        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining)")
+        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {self.attack_map.keys()}")
+
 
     def attack(self, point: Point) -> AttackResponse:
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:

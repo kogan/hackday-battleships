@@ -1,5 +1,4 @@
 import React from 'react'
-import Plot from 'react-plotly.js'
 import Graph from '../Graph'
 const NUM_PLAYERS = 2
 
@@ -80,6 +79,7 @@ export default class GraphWrapper extends React.Component {
     const { player1, player2, layout } = this.state
     return (
       <div>
+        <button onClick={this.startStop}>Start / Stop</button>
         <Graph
           data={[
             player1,
@@ -87,7 +87,6 @@ export default class GraphWrapper extends React.Component {
           ]}
           layout={layout}
         />
-        <button onClick={this.startStop}>Start / Stop</button>
       </div>
     )
   }

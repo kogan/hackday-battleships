@@ -155,8 +155,34 @@ class Engine:
         [x, y] = random.sample(range(self.size), 2)
         return Point(x, y)
 
+    def _attack_get_target_mode_point(self) -> Point:
+        if len(self.attack_queue):
+            return self.attack_queue.popleft()
+        else:
+            # Queue exhausted. Switch off target mode.
+            self.is_attack_mode_target = False
+            return self._attack_get_random_disparate_point_with_state_unknown()
+
+    def _attack_enqueue_if_unknown(self, point):
+        if self.opponent_board.tiles[point.x][point.y].state == State.Unknown:
+            self.attack_queue.append(point)
+
+    def _attack_enqueue_adjacent(self, attack):
+        if attack.y > 0:
+            self._attack_enqueue_if_unknown(Point(attack.x, attack.y - 1))
+        if attack.x < self.size - 1:
+            self._attack_enqueue_if_unknown(Point(attack.x + 1, attack.y))
+        if attack.y < self.size - 1:
+            self._attack_enqueue_if_unknown(Point(attack.x, attack.y + 1))
+        if attack.x > 0:
+            self._attack_enqueue_if_unknown(Point(attack.x - 1, attack.y))
+        self.is_attack_mode_target = (len(self.attack_queue) > 0)
+
     def get_attack(self) -> Point:
-        return self._attack_get_random_disparate_point_with_state_unknown()
+        if self.is_attack_mode_target:
+            return self._attack_get_target_mode_point()
+        else:
+            return self._attack_get_random_disparate_point_with_state_unknown()
 
     def test(self):
         self.our_board = self.generate_board()
@@ -170,6 +196,7 @@ class Engine:
             tile = self.opponent_board.tiles[attack.x][attack.y]
             if response is AttackResponse.Hit:
                 tile.state = State.Hit
+                self._attack_enqueue_adjacent(attack)
             elif response is AttackResponse.Sunk:
                 tile.state = State.Hit
             elif response is AttackResponse.Win:

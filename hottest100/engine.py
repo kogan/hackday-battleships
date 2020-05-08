@@ -64,7 +64,7 @@ class ShipPlacer:
 
     @classmethod
     def random_ships(ship_config=None):
-        self.ships = []
+        ships = []
         # place ships randomly on board
         # XXX: this will not detect if there are too many ships to fit on the board and so will run forever
         if ship_config is None:

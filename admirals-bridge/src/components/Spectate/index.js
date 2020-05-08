@@ -74,7 +74,6 @@ function stateToBoard(state, player) {
         for(let y = 0; y < 10; y++) {
         let toAppend = state.filter((item) => item.x == x && item.y == y && item.player == player)
         if (toAppend.length === 1){
-            console.log("found one!")
             results.push(toAppend[0].result)
             }
         else {
@@ -82,8 +81,12 @@ function stateToBoard(state, player) {
         }
         }
     }
-    console.log(results)
     return results
 }
 
-export {Spectate, ResultCell, DisplayPlayer, stateToBoard};
+function PlayerBoard({props}) {
+    let playerMoves = stateToBoard(props.moves, props.player)
+    return <DisplayPlayer moves={playerMoves}/>
+}
+
+export {Spectate, ResultCell, DisplayPlayer, stateToBoard, PlayerBoard};

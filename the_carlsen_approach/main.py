@@ -137,6 +137,9 @@ def phase_place(session, url, game_id, config):
     ships = make_ship_placement(config["board_size"], config["ship_config"])
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
+def surrounding_coords(coord):
+    x,y = coord
+    return [(x-1,y), (x+1,y),(x,y-1),(x,y+1)]
 
 class BoardState(object):
     def init(self, session, url, game_id, config):
@@ -171,32 +174,29 @@ class BoardState(object):
             size += 1
             self.board_state[(x + c, y)] = "SUNK"
             c += 1
-        else:
-            self.board_state[(x + c, y)] = "MISS"
 
         c = 1
         while self.board_state.get((x - c, y)) == "HIT":
             size += 1
             self.board_state[(x - c, y)] = "SUNK"
             c += 1
-        else:
-            self.board_state[(x - c, y)] = "MISS"
 
         c = 1
         while self.board_state.get((x, y + c)) == "HIT":
             size += 1
             self.board_state[(x, y + c)] = "SUNK"
             c += 1
-        else:
-            self.board_state[(x, y + c)] = "MISS"
 
         c = 1
         while self.board_state.get((x, y - c)) == "HIT":
             size += 1
             self.board_state[(x, y - c)] = "SUNK"
             c += 1
-        else:
-            self.board_state[(x, y - c)] = "MISS"
+
+        for coord in self.board_state:
+            is_sunk_in_surrrounding = any([self.board_state[x] == "SUNK" for x in surrounding_coords(coord)])
+            if self.board_state[coord] not in ["SUNK", "HIT"] and is_sunk_in_surrrounding:
+                self.board_state[coord] = "MISS"
 
         self.ships_alive[size] = self.ships_alive[size] - 1
         if self.ships_alive[size] == 0:

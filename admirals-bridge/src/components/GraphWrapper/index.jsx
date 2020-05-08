@@ -1,72 +1,70 @@
-import React from 'react'
-import Graph from '../Graph'
-const NUM_PLAYERS = 2
+import React from "react";
+import Graph from "../Graph";
+const NUM_PLAYERS = 2;
 
-export default class GraphWrapper extends React.Component {
-  state = {
-    player1: {
-      x: [0],
-      y: [0], 
-      name: 'Player 1',
-      line: {
-        width: 5
-      }
+const mockState = {
+  player1: {
+    x: [0],
+    y: [0],
+    name: "Player 1",
+    line: {
+      width: 5,
     },
-    player2: {
-      x: [0],
-      y: [0],
-      name: 'Player 2',
-      line: {
-        width: 5
-      }
+  },
+  player2: {
+    x: [0],
+    y: [0],
+    name: "Player 2",
+    line: {
+      width: 5,
     },
-    layout: {
-      datarevision: 0
-    },
-    revision: 0,
-    isDataUpating: false,
-    intervalFunc: null,
-  }
-  constructor(props) {
-    super(props)
-  }
+  },
+  layout: {
+    datarevision: 0,
+  },
+  revision: 0,
+  isDataUpating: false,
+  intervalFunc: null,
+};
 
-  startStop = () => {
-    if(this.state.isDataUpating) {
-      this.setState((state) => {
-        clearInterval(state.intervalFunc)
-        return { 
-          intervalFunc: null,
-          isDataUpating: false
-        }
-      })
+const GraphWrapper = (props) => {
+  const [state, setState] = React.useState(mockState);
+
+  const startStop = React.useCallback(() => {
+    if (state.isDataUpating) {
+      clearInterval(state.intervalFunc);
+      setState({
+        ...state,
+        intervalFunc: null,
+        isDataUpating: false,
+      });
+    } else {
+      setState({
+        ...state,
+        intervalFunc: setInterval(increaseGraphic, 500),
+        isDataUpating: true,
+      });
     }
-    else {
-      this.setState({
-        intervalFunc: setInterval(this.increaseGraphic, 500),
-        isDataUpating: true
-      })
-    }
-  }
-  
-  rand = () => {
-    const rawRandom = Math.min(0.99, 2.75 * Math.random()) * NUM_PLAYERS
-    return Math.floor(rawRandom)
-  }
+  }, []);
 
-  increaseGraphic = () => {
-    const { player1, player2, layout, revision } = this.state;
+  const rand = React.useCallback(() => {
+    const rawRandom = Math.min(0.99, 2.75 * Math.random()) * NUM_PLAYERS;
+    return Math.floor(rawRandom);
+  }, []);
 
-    const playerWinner = this.rand()
-  
-    const previous1 = player1.y[player1.y.length-1]
-    const previous2 = player2.y[player2.y.length-1]
+  const increaseGraphic = React.useCallback(() => {
+    const { player1, player2, layout, revision } = state;
+
+    const playerWinner = rand();
+
+    const previous1 = player1.y[player1.y.length - 1];
+    const previous2 = player2.y[player2.y.length - 1];
 
     player1.x.push(revision);
     player2.x.push(revision);
 
     player1.y.push(previous1 + (playerWinner ? 1 : 0));
-    
+
     player2.y.push(previous2 + (playerWinner ? 0 : 1));
 
     if (player1.x.length >= 10) {
@@ -77,23 +75,17 @@ export default class GraphWrapper extends React.Component {
       player2.x.shift();
       player2.y.shift();
     }
-    this.setState({ revision: this.state.revision + 1 });
-    layout.datarevision = this.state.revision + 1;
-  }
+    setState({ ...state, revision: state.revision + 1 });
+    layout.datarevision = state.revision + 1;
+  }, [state]);
 
-  render() {
-    const { player1, player2, layout } = this.state
-    return (
-      <div>
-        <button onClick={this.startStop}>Start / Stop</button>
-        <Graph
-          data={[
-            player1,
-            player2
-          ]}
-          layout={layout}
-        />
-      </div>
-    )
-  }
-}
+  const { player1, player2, layout } = state;
+  return (
+    <div>
+      <button onClick={startStop}>Start / Stop</button>
+      <Graph data={[player1, player2]} layout={layout} />
+    </div>
+  );
+};
+
+export default GraphWrapper;

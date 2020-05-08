@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urljoin
@@ -38,15 +39,15 @@ def get_surrounding_squares(ship):
     if ship.orientation == OrientationVertical:
         return (
             get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-            .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 1, ship.orientation))
-            .union({(ship.x, ship.y - 1), (ship.x, ship.y + ship.length)})
-            .union(get_occupied_squares(ship))
+                .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 1, ship.orientation))
+                .union({(ship.x, ship.y - 1), (ship.x, ship.y + ship.length)})
+                .union(get_occupied_squares(ship))
         )
     return (
         get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-        .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 1, ship.orientation))
-        .union({(ship.x - 1, ship.y), (ship.x + ship.length, ship.y)})
-        .union(get_occupied_squares(ship))
+            .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 1, ship.orientation))
+            .union({(ship.x - 1, ship.y), (ship.x + ship.length, ship.y)})
+            .union(get_occupied_squares(ship))
     )
 
 
@@ -128,10 +129,41 @@ def phase_place(session, url, game_id, config):
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
 
+def enumerate_ships(board_state, ship_size, board_size):
+    coordinates = []  # list of coordinates with duplicates
+    for x, y in board_state:
+        # up
+        if (y + ship_size) < board_size:
+            for step in range(ship_size):
+                coordinates.append((x, y + step))
+
+        # right
+        if (x + ship_size) < board_size:
+            for step in range(ship_size):
+                coordinates.append((x + step, y))
+
+    return coordinates
+
+
+def enumerate_board(board):
+    board_state = board.state
+    board_size = board.size
+    ships = board.ships
+    all_coordinates = []
+    for ship in ships:
+        all_coordinates += enumerate_ships(board_state,ship.size, board_size)
+    return Counter(all_coordinates)
+
+
+
+
+
+
 def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
+
     coords = [(x, y) for x in range(config["board_size"]) for y in range(config["board_size"])]
     board = [["   "] * config["board_size"] for _ in range(config["board_size"])]
     random.shuffle(coords)

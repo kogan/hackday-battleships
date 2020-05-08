@@ -1,5 +1,6 @@
 import enum
 import random
+import statistics
 import typing as t
 from collections import deque
 from dataclasses import asdict, dataclass
@@ -369,7 +370,14 @@ class TestCoordinator(Coordinator):
 
 if __name__ == "__main__":
     size = 10
-    engine = Engine(size=size)
-    coordinator = TestCoordinator(engine, max_moves=100)
-    engine.play(coordinator)
-    print(f"Game finished with {coordinator.moves} moves")
+    history : t.List[int] = []
+    for x in range(50):
+        engine = Engine(size=size)
+        coordinator = TestCoordinator(engine, max_moves=100)
+        engine.play(coordinator)
+        print(f"Game finished with {coordinator.moves} moves")
+        history.append(coordinator.moves)
+    best = min(history)
+    worst = max(history)
+    mean = statistics.mean(history)
+    print(f"Games: {len(history)} [Best: {best} |Worst: {worst}|Mean: {mean}]")

@@ -103,6 +103,7 @@ class Ship:
     def __hash__(self):
         return id(self)
 
+
 @dataclass
 class Board:
     tiles: t.List[t.List[Tile]]
@@ -126,19 +127,19 @@ class ShipPlacer:
 
     def random_strategy(self, size, ship_config=None):
         # randomly selelct a placement strategy
-        strategy = random.choice([
-            self.random_ships,
-            #self.corner_ships,
-        ])
+        strategy = random.choice(
+            [
+                self.random_ships,
+                # self.corner_ships,
+            ]
+        )
 
         print("strategy is: {}".format(strategy.__name__))
 
         return strategy(size, ship_config)
 
-
-
     def random_ships(self, size, ship_config=None) -> t.List[Ship]:
-        ships : t.List[Ship] = []
+        ships: t.List[Ship] = []
         # place ships randomly on board
         # XXX: this will not detect if there are too many ships to fit on the board and so will run forever
         if ship_config is None:
@@ -180,13 +181,13 @@ class ShipPlacer:
             ship_config = SHIP_CONFIG
 
         # pick a random corner
-        corner = random.choice(['UL', 'UR', 'DL', 'DR'])
+        corner = random.choice(["UL", "UR", "DL", "DR"])
 
-        if corner == 'UL':
+        if corner == "UL":
             start_x, start_y = 0, 0
-        elif corner == 'UR':
+        elif corner == "UR":
             start_x, start_y = size, 0
-        elif corner == 'DL':
+        elif corner == "DL":
             start_x, start_y = 0, size
         else:  # corner == 'DR'
             start_x, start_y = size, size
@@ -197,9 +198,9 @@ class ShipPlacer:
         end_x = size if start_x == 0 else 0
         end_y = size if start_y == 0 else 0
 
-        ships_to_place= deepcopy(ship_config)
+        ships_to_place = deepcopy(ship_config)
         random.shuffle(ships_to_place)
-        
+
         ships = []
 
         for ship_type in ships_to_place:
@@ -227,7 +228,6 @@ class ShipPlacer:
 
         return ships
 
-
     def clash(self, size, ships, new_ship):
         # Detect if current placement clashes with existing ships
         if not ships:
@@ -246,7 +246,6 @@ class ShipPlacer:
             excluded_points.append(Point(size, z))
             # bottom edge
             excluded_points.append(Point(z, size))
-
 
         for ship in ships:
             ship_exclusion_zone = []
@@ -330,7 +329,11 @@ class Engine:
     def __init__(self, size=10):
         self.size = size
         self.opponent_board = Board.empty(size=size)
-        points = [ (x,y) for x in [ 2*i+1 for i in range(10>>1) ] for y in [ 2*i for i in range(10>>1) ] ]
+        points = [
+            (x, y)
+            for x in [2 * i + 1 for i in range(10 >> 1)]
+            for y in [2 * i for i in range(10 >> 1)]
+        ]
         self.attack_points = set(points).union(map(lambda t: t[::-1], points))
         self.is_attack_mode_target = False
         self.attack_queue = deque()
@@ -371,7 +374,7 @@ class Engine:
             self._attack_enqueue_if_unknown(Point(attack.x, attack.y + 1))
         if attack.x > 0:
             self._attack_enqueue_if_unknown(Point(attack.x - 1, attack.y))
-        self.is_attack_mode_target = (len(self.attack_queue) > 0)
+        self.is_attack_mode_target = len(self.attack_queue) > 0
 
     def get_attack(self) -> Point:
         if self.is_attack_mode_target:
@@ -407,7 +410,7 @@ class TestCoordinator(Coordinator):
         self.max_moves = max_moves
         placer = ShipPlacer()
         self.ships = placer.random_ships(size=engine.size)
-        attack_map : t.Dict[Point, Ship] = {}
+        attack_map: t.Dict[Point, Ship] = {}
         for ship in self.ships:
             for point in ship.points_remaining:
                 attack_map[point] = ship
@@ -415,10 +418,16 @@ class TestCoordinator(Coordinator):
 
     def print_attack(self, point: Point, response: AttackResponse):
         ships = set(self.attack_map.values())
-        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
+        print(
+            f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}"
+        )
 
     def attack(self, point: Point) -> AttackResponse:
-        if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
+        if (
+            point in self.attacks
+            or point.x >= self.engine.size
+            or point.y >= self.engine.size
+        ):
             response = AttackResponse.Invalid
             self.print_attack(point, response)
             return response
@@ -452,7 +461,7 @@ class TestCoordinator(Coordinator):
 
 if __name__ == "__main__":
     size = 10
-    history : t.List[int] = []
+    history: t.List[int] = []
     for x in range(50):
         engine = Engine(size=size)
         coordinator = TestCoordinator(engine, max_moves=100)
@@ -469,6 +478,23 @@ def attack():
     pass
     # loop and use requests to attack
 
-def get_ships():
-    pass
+
+def get_ships(size, ship_config=None):
     # return data that server requires for ship placement
+
+    sp = ShipPlacer()
+    ships = sp.random_strategy(size, ship_config)
+
+    out = []
+    for ship in ships:
+        out.append(
+            dict(
+                x=ship.position.x,
+                y=ship.position.y,
+                length=ship.length,
+                orientation="HORIZONTAL"
+                if ship.orientation == Orientation.Horizontal
+                else "VERTICAL",
+            )
+        )
+    return out

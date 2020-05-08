@@ -303,13 +303,13 @@ class BoardState(object):
                 else:
                     (first_hit_coord, first_hit_move_index) = self.hit_mode
                     hit_mode_moves = self.history[first_hit_move_index:]
-                    hit_mode_moves_hit = filter(lambda x: x["result"] == "HIT", hit_mode_moves)
-                    hit_mode_moves_miss = filter(lambda x: x["result"] == "MISS", hit_mode_moves)
+                    hit_mode_moves_hit = [x for x in hit_mode_moves if x["result"] == "HIT"]
+                    hit_mode_moves_miss = [x for x in hit_mode_moves if x["result"] == "MISS"]
 
                     direction = self.direction(hit_mode_moves_hit, first_hit_coord)
                     if direction is None:
                         direction = self.direction(hit_mode_moves_miss, first_hit_coord)
-
+                    print(f"hit_mode_direction={direction}")
                     if direction == OrientationVertical:
                         candidates = []
                         for step in [-1,1]:
@@ -323,7 +323,10 @@ class BoardState(object):
                 valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
                 random.shuffle(valid_candidates)
                 print(f"valid_candidate_count={len(valid_candidates)}")
-                return valid_candidates[0]
+                if len(valid_candidates) != 0:
+                    return valid_candidates[0]
+                self.hit_mode = None
+
             return Counter(all_placements).most_common(1)[0][0]
 
         except Exception:

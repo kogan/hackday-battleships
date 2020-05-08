@@ -221,7 +221,8 @@ class BoardState(object):
                     if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
-                    up_coordinates.append(coord)
+                    if self.board_state[coord] != "HIT":
+                        up_coordinates.append(coord)
 
             if valid_placement:
                 coordinates.extend(up_coordinates)
@@ -234,7 +235,8 @@ class BoardState(object):
                     if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
-                    right_coordinates.append(coord)
+                    if self.board_state[coord] != "HIT":
+                        right_coordinates.append(coord)
 
             if valid_placement:
                 coordinates.extend(right_coordinates)
@@ -249,6 +251,8 @@ class BoardState(object):
                 all_coordinates += ship_coordinates
         return all_coordinates
 
+
+
     def next_move(self):
         all_placements = self.enumerate_all_placements()
         if self.history and self.history[-1]["result"] == "HIT":
@@ -258,7 +262,7 @@ class BoardState(object):
             candidates.append((x, y + 1))
             candidates.append((x + 1, y))
             candidates.append((x, y - 1))
-            candidates.append((x - 1, y - 1))
+            candidates.append((x - 1, y))
             all_placements = filter(lambda coord: coord in candidates, all_placements)
         return Counter(all_placements).most_common(1)[0][0]
 

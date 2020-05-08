@@ -362,13 +362,13 @@ class GameSetup(models.Model):
     def surrounding_squares(self) -> t.Set[t.Tuple[int, int]]:
         if self.orientation == Orientation.VERTICAL:
             return (
-                self.get_squares(self.x - 1, self.y - 1, self.length + 1, self.orientation)
-                .union(self.get_squares(self.x + 1, self.y - 1, self.length + 1, self.orientation))
+                self.get_squares(self.x - 1, self.y - 1, self.length + 2, self.orientation)
+                .union(self.get_squares(self.x + 1, self.y - 1, self.length + 2, self.orientation))
                 .union({(self.x, self.y - 1), (self.x, self.y + self.length)})
             )
         return (
-            self.get_squares(self.x - 1, self.y - 1, self.length + 1, self.orientation)
-            .union(self.get_squares(self.x - 1, self.y + 1, self.length + 1, self.orientation))
+            self.get_squares(self.x - 1, self.y - 1, self.length + 2, self.orientation)
+            .union(self.get_squares(self.x - 1, self.y + 1, self.length + 2, self.orientation))
             .union({(self.x - 1, self.y), (self.x + self.length, self.y)})
         )
 

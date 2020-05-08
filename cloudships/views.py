@@ -109,6 +109,7 @@ def place_ships(request, game_id=None):
         return JsonResponse(dict(errors=form.errors), status=400)
     try:
         GamePlayer.objects.add_ships(game_id, request.user, form.validated_data)
+        return JsonResponse(dict(), status=200)
     except GameException as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
 

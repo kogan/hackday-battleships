@@ -155,8 +155,11 @@ def phase_attack(session, url, game_id, config):
             board_state[y][x] = CoordinateState.MISS
         else:
             board_state[y][x] = CoordinateState.HIT
-            mark_hit(board_state, x, y)
             num_hit += 1
+            if response["result"] == "SUNK":
+                mark_sunk(board_state, x, y)
+            else:
+                mark_hit(board_state, x, y)
             print_attack_board(board_state)
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
 
@@ -189,15 +192,57 @@ def mark_hit(board_state: List[List[CoordinateState]], x: int, y: int):
     if x > 1 and y > 1:
         if board_state[y-1][x-1] == CoordinateState.UNKNOWN:
             board_state[y-1][x-1] = CoordinateState.BLOCKED
-    if x > 1 and y < len(board_state):
+    if x > 1 and y < len(board_state) - 1:
         if board_state[y+1][x-1] == CoordinateState.UNKNOWN:
             board_state[y+1][x-1] = CoordinateState.BLOCKED
-    if x < len(board_state[0]) and y > 1:
+    if x < len(board_state[0]) - 1 and y > 1:
         if board_state[y-1][x+1] == CoordinateState.UNKNOWN:
             board_state[y-1][x+1] = CoordinateState.BLOCKED
-    if x < len(board_state[0]) and y < len(board_state):
+    if x < len(board_state[0]) - 1 and y < len(board_state) - 1:
         if board_state[y+1][x+1] == CoordinateState.UNKNOWN:
             board_state[y+1][x+1] = CoordinateState.BLOCKED
+
+
+def mark_sunk(board_state: List[List[CoordinateState]], x: int, y: int):
+    # When we have sunk something, find all the surrounding coords
+    boat_min_x = x
+    boat_min_y = y
+    boat_max_x = x
+    boat_max_y = y
+
+    while boat_min_x > 1:
+        if board_state[y][boat_min_x - 1] == CoordinateState.HIT:
+            boat_min_x -= 1
+        else:
+            break
+
+    while boat_min_y > 1:
+        if board_state[boat_min_y - 1][x] == CoordinateState.HIT:
+            boat_min_y -= 1
+        else:
+            break
+
+    while boat_max_x < len(board_state[0]) - 1:
+        if board_state[y][boat_max_x + 1] == CoordinateState.HIT:
+            boat_max_x += 1
+        else:
+            break
+
+    while boat_max_y < len(board_state) - 1:
+        if board_state[boat_max_y + 1][x] == CoordinateState.HIT:
+            boat_max_y += 1
+        else:
+            break
+
+    max_x = min(len(board_state[0]) - 1, boat_max_x + 1)
+    max_y = min(len(board_state) - 1, boat_max_y + 1)
+    min_x = max(0, boat_max_x - 1)
+    min_y = max(0, boat_max_y - 1)
+
+    for cx in range(min_x, max_x):
+        for cy in range(min_y, max_y):
+            if board_state[cy][cx] == CoordinateState.UNKNOWN:
+                board_state[cy][cx] = CoordinateState.BLOCKED
 
 
 def print_attack_board(state: List[List[CoordinateState]]):
@@ -205,14 +250,14 @@ def print_attack_board(state: List[List[CoordinateState]]):
 
     def to_str(p: CoordinateState):
         if p == CoordinateState.HIT:
-            return "X"
+            return "💥"
         if p == CoordinateState.MISS:
-            return "o"
+            return ". "
         if p == CoordinateState.BLOCKED:
-            return "."
-        return " "
+            return "░░"
+        return "  "
     for row in state:
-        print(" ".join(to_str(p) for p in row))
+        print("".join(to_str(p) for p in row))
 
     print("\n")
 

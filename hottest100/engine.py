@@ -131,7 +131,7 @@ class ShipPlacer:
         strategy = random.choice(
             [
                 self.random_ships,
-                # self.corner_ships,
+                self.corner_ships,
             ]
         )
 
@@ -202,7 +202,7 @@ class ShipPlacer:
         ships_to_place = deepcopy(ship_config)
         random.shuffle(ships_to_place)
 
-        #print("start: {},{}".format(start_x, start_y))
+        print("start: {},{}".format(start_x, start_y))
 
         ships = []
 
@@ -228,15 +228,13 @@ class ShipPlacer:
                         break
 
                 ships.append(new_ship)
-                #print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
-                #self.ship_repr(size, ships)
+                print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
+                self.ship_repr(size, ships)
 
         return ships
 
     def clash(self, size, ships, new_ship):
         # Detect if current placement clashes with existing ships
-        if not ships:
-            return False
 
         # create a bit list of all points that have a ship on them
         excluded_points = []

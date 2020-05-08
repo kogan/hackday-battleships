@@ -64,6 +64,9 @@ class BotServer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     server_address = models.CharField(max_length=100)
 
+    def __str__(self):
+        return self.user.username
+
 
 class GameConfigManager(models.Manager):
     def create_config(self, board_size: int, ship_configs: t.Sequence[ShipConfig]):
@@ -82,6 +85,7 @@ class GameConfigManager(models.Manager):
     def start_game(self, config_id, server_1: BotServer, server_2: BotServer):
         game = Game.objects.create(state=GameStates.JOIN_PHASE, config_id=config_id)
         dispatcher.dispatch(game, server_1, server_2)
+        return game
 
 
 class GameConfig(models.Model):
@@ -320,6 +324,9 @@ class GamePlayer(models.Model):
         choices=PlayerStates.choices, max_length=16, default=PlayerStates.PLAYING
     )
     objects = GamePlayerQuerySet.as_manager()
+
+    def __str__(self):
+        return self.player.username
 
 
 class GameSetupQuerySet(models.QuerySet):

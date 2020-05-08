@@ -1,8 +1,8 @@
 import React from 'react';
-import {Spectate, ResultCell, DisplayPlayer} from '../components/Spectate/index';
+import {Spectate, ResultCell, DisplayPlayer, stateToBoard} from '../components/Spectate/index';
 
 export default {
-    title: 'ddd',
+    title: 'Spectator Views',
     component: Spectate,
   };
 
@@ -22,6 +22,13 @@ export const CellHit = () => (
     </div>
 )
 
-export const BoardDisplay = () => (
+export const BoardDisplayDummy = () => (
     <DisplayPlayer moves={["MISS", "MISS", "MISS", "HIT", "HIT", null, null, "SUNK"]}/>
+)
+
+const samplePlayerState = stateToBoard([{"x":0,"y":0,"player":"player1","result":"HIT"},
+                                        {"x":0,"y":5,"player":"player1","result":"SUNK"}], "player1")
+
+export const BoardDisplayWithState = () => (
+    <DisplayPlayer moves={samplePlayerState}/>
 )

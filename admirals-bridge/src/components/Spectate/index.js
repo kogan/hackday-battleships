@@ -68,8 +68,22 @@ function DisplayPlayer({moves}) {
     )
 }
 
-export {Spectate, ResultCell, DisplayPlayer};
-
-function gameStateToPlayerView(apiResult) {
-    
+function stateToBoard(state, player) {
+    let results = []
+    for(let x = 0; x < 10; x++) {
+        for(let y = 0; y < 10; y++) {
+        let toAppend = state.filter((item) => item.x == x && item.y == y && item.player == player)
+        if (toAppend.length === 1){
+            console.log("found one!")
+            results.push(toAppend[0].result)
+            }
+        else {
+            results.push(null)
+        }
+        }
+    }
+    console.log(results)
+    return results
 }
+
+export {Spectate, ResultCell, DisplayPlayer, stateToBoard};

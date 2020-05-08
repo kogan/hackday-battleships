@@ -1,6 +1,5 @@
 import React from "react"
-// import Graph from '../../Graph'
-import GraphWrapper from '../../GraphWrapper'
+import GraphWrapper from '../GraphWrapper'
 
 const Results = () => (
   <div>

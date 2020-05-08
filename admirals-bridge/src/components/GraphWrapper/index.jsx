@@ -1,7 +1,6 @@
 import React from 'react'
 import Plot from 'react-plotly.js'
-import Graph from './Graph'
-import rawData from './rawData'
+import Graph from '../Graph'
 const NUM_PLAYERS = 2
 
 export default class GraphWrapper extends React.Component {

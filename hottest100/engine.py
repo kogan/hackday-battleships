@@ -338,7 +338,7 @@ class TestCoordinator(Coordinator):
         self.attack_map = attack_map
 
     def print_attack(self, point: Point, response: AttackResponse):
-        print(f"Attack: {point} | {response}")
+        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining)")
 
     def attack(self, point: Point) -> AttackResponse:
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
@@ -350,7 +350,7 @@ class TestCoordinator(Coordinator):
         # but not for a free hit.
 
         self.attacks.add(point)
-        ship = self.attack_map.get(point)
+        ship = self.attack_map.pop(point, None)
         if not ship:
             self.moves += 1
             response = AttackResponse.Miss
@@ -364,6 +364,9 @@ class TestCoordinator(Coordinator):
         else:
             response = AttackResponse.Hit
         self.print_attack(point, response)
+        if not self.attack_map:
+            response = AttackResponse.Win
+            self.print_attack(point, response)
         return response
 
     def set_placement(self, board: Board) -> bool:

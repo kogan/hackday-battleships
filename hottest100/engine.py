@@ -1,6 +1,7 @@
 import enum
 import random
 import statistics
+import sys
 import time
 import typing as t
 from collections import deque
@@ -22,9 +23,9 @@ class Orientation(enum.Enum):
 
 
 class State(enum.Enum):
-    Unknown = "?"
-    Hit = "X"
-    Empty = "O"
+    Unknown = "  "
+    Hit = "💥"
+    Empty = "🌊"
 
 
 class Health(enum.Enum):
@@ -114,6 +115,10 @@ class Board:
     def empty(cls, size: int):
         tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
         return Board(tiles=tiles, size=size)
+
+    def print_board(self):
+        for row in self.tiles:
+            print("".join(tile.state.value for tile in row))
 
 
 class ShipPlacer:
@@ -326,10 +331,6 @@ class Engine:
         self.is_attack_mode_target = False
         self.attack_queue = deque()
 
-    def generate_board(self) -> Board:
-        self.our_board = Board(tiles=[])
-        return self.our_board
-
     def _attack_get_random_disparate_point_with_state_unknown(self) -> Point:
         while len(self.attack_points):
             (x, y) = random.choice(tuple(self.attack_points))
@@ -370,43 +371,117 @@ class Engine:
         else:
             return self._attack_get_random_disparate_point_with_state_unknown()
 
-    def play(self, coordinator: Coordinator):
+    def play(self, coordinator: Coordinator, total_opponent_tiles: int):
         response = AttackResponse.Miss
-        while response != AttackResponse.Win:
+        hits = 0
+        while hits < total_opponent_tiles:
             attack = self.get_attack()
             response = coordinator.attack(attack)
             tile = self.opponent_board.tiles[attack.x][attack.y]
             if response is AttackResponse.Hit:
                 tile.state = State.Hit
+                hits += 1
                 self._attack_enqueue_adjacent(attack)
             elif response is AttackResponse.Sunk:
+                hits += 1
                 tile.state = State.Hit
             elif response is AttackResponse.Win:
+                hits += 1
                 tile.state = State.Hit
             elif response is AttackResponse.Miss:
                 tile.state = State.Empty
             elif response is AttackResponse.Invalid:
                 print(f"Uh Oh: we messed up with {attack}")
+        self.opponent_board.print_board()
+
+
+class HttpCoordinator:
+    def __init__(self, session, url, game_id):
+        self.session = session
+        self.url = url
+        self.game_id = game_id
+        self.moves = 0
+        self.last_hit = False
+
+    def attack(self, point: Point) -> AttackResponse:
+        if not self.last_hit:
+            self.moves += 1
+        response = self.session.post(
+            urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=point.x, y=point.y)
+        )
+        response.raise_for_status()
+        data = response.json()["result"]
+        if data == "HIT":
+            self.last_hit = True
+            return AttackResponse.Hit
+        elif data == "SUNK":
+            self.last_hit = True
+            return AttackResponse.Sunk
+        elif data == "MISS":
+            self.last_hit = False
+            return AttackResponse.Miss
+        raise ValueError(f"data was not a known value: {data=}")
+
+    def run(self):
+        print(f"setting up {self.game_id=}")
+        config_url = urljoin(self.url, f"/api/game/{self.game_id}/")
+        response = self.session.get(config_url)
+        response.raise_for_status()
+        config = response.json()
+        config = config["game"]
+        size, ship_config = config["board_size"], config["ship_config"]
+        ships = self.get_ships(size, ship_config=ship_config)
+        place_url = urljoin(self.url, f"/api/game/{self.game_id}/place/")
+        resp = self.session.post(place_url, json=ships)
+        resp.raise_for_status()
+        self.wait("attack")
+        # TODO: Engine accepts a ship_config
+        self.engine = engine = Engine(size=size)
+        total_opponent_tiles = sum(map(lambda s: s["length"] * s["count"], ship_config))
+        print(f"setup complete, attacking {self.game_id=}")
+        engine.play(self, total_opponent_tiles)
+        print(f"{self.game_id=} complete in {self.moves=}")
+        return engine
+
+    def get_ships(self, size, ship_config):
+        sp = ShipPlacer()
+        ships = sp.random_strategy(size, ship_config)
+        return [
+            dict(
+                x=ship.position.x,
+                y=ship.position.y,
+                length=ship.length,
+                orientation=ship.orientation.value,
+            )
+            for ship in ships
+        ]
+
+    def wait(self, state):
+        while True:
+            response = self.session.get(urljoin(self.url, f"/api/game/{self.game_id}/")).json()
+            if response["game"]["state"] == state:
+                break
+            time.sleep(1)
 
 
 class TestCoordinator(Coordinator):
-    def __init__(self, engine: Engine, max_moves=10):
+    def __init__(self, engine: Engine, ships, debug=True):
         self.engine = engine
-        self.game_board = engine.generate_board()
+        self.debug = debug
         self.attacks: t.Set[Point] = set()
         self.moves = 0
-        self.max_moves = max_moves
-        placer = ShipPlacer()
-        self.ships = placer.random_ships(size=engine.size)
+        self.ships = ships
         attack_map: t.Dict[Point, Ship] = {}
         for ship in self.ships:
             for point in ship.points_remaining:
                 attack_map[point] = ship
         self.attack_map = attack_map
+        self.free_hit = False
 
     def print_attack(self, point: Point, response: AttackResponse):
-        ships = set(self.attack_map.values())
-        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
+        if self.debug:
+            ships = set(self.attack_map.values())
+            print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
 
     def attack(self, point: Point) -> AttackResponse:
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
@@ -414,18 +489,19 @@ class TestCoordinator(Coordinator):
             self.print_attack(point, response)
             return response
 
-        # TODO, moves calculation means we need to inc moves for the first hit,
-        # but not for a free hit.
+        if not self.free_hit:
+            self.moves += 1
 
         self.attacks.add(point)
         ship = self.attack_map.pop(point, None)
         if not ship:
-            self.moves += 1
+            self.free_hit = False
             response = AttackResponse.Miss
             self.print_attack(point, response)
             return response
 
         # Hit!
+        self.free_hit = True
         ship.hit(point)
         if ship.health is Health.Dead:
             response = AttackResponse.Sunk
@@ -437,87 +513,26 @@ class TestCoordinator(Coordinator):
             self.print_attack(point, response)
         return response
 
-    def set_placement(self, board: Board) -> bool:
-        return True
+    def run(self):
+        hits_required = sum(ship.length for ship in self.ships)
+        self.engine.play(self, hits_required)
 
 
 if __name__ == "__main__":
+    moves = 50 if len(sys.argv) <= 1 else int(sys.argv[1])
     size = 10
     history: t.List[int] = []
-    for x in range(50):
+    debug = True if moves <= 50 else False
+    placer = ShipPlacer()
+    for x in range(moves):
+        ships = placer.random_ships(size=size)
+        hits_required = sum(ship.length for ship in ships)
         engine = Engine(size=size)
-        coordinator = TestCoordinator(engine, max_moves=100)
-        engine.play(coordinator)
+        coordinator = TestCoordinator(engine, ships, debug=debug)
+        coordinator.run()
         print(f"Game finished with {coordinator.moves} moves")
         history.append(coordinator.moves)
     best = min(history)
     worst = max(history)
     mean = statistics.mean(history)
-    print(f"Games: {len(history)} [Best: {best} |Worst: {worst}|Mean: {mean}]")
-
-
-def attack(session, url, game_id, config):
-    size = config["board_size"]
-    engine = Engine(size=size)
-
-    ship_config = config["ship_config"]
-    total_opponent_tiles = sum(map(lambda s: s["length"] * s["count"], ship_config))
-
-    while total_opponent_tiles:
-        attack = engine.get_attack()
-        tile = engine.opponent_board.tiles[attack.x][attack.y]
-        response = session.post(
-            urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=attack.x, y=attack.y)
-        )
-        response = response.json()
-        print("response", response)
-        res = response["result"]
-        if res == "MISS":
-            tile.state = State.Empty
-        elif res == "HIT":
-            tile.state = State.Hit
-            total_opponent_tiles -= 1
-            engine._attack_enqueue_adjacent(attack)
-        elif res == "SUNK":
-            tile.state = State.Hit
-            total_opponent_tiles -= 1
-
-
-def get_ships(size, ship_config=None):
-    # return data that server requires for ship placement
-
-    sp = ShipPlacer()
-    ships = sp.random_strategy(size, ship_config)
-
-    out = []
-    for ship in ships:
-        out.append(
-            dict(
-                x=ship.position.x,
-                y=ship.position.y,
-                length=ship.length,
-                orientation=ship.orientation.value,
-            )
-        )
-    return out
-
-
-def setup(session, url, game_id):
-    config_url = urljoin(url, f"/api/game/{game_id}/")
-    response = session.get(config_url)
-    config = response.json()
-    config = config["game"]
-    size, ship_config = config["board_size"], config["ship_config"]
-    ships = get_ships(size, ship_config=ship_config)
-    place_url = urljoin(url, f"/api/game/{game_id}/place/")
-    session.post(place_url, json=ships)
-    return ships, config
-
-
-def wait(session, url, game_id, state):
-    while True:
-        response = session.get(urljoin(url, f"/api/game/{game_id}/")).json()
-        print(f"Waiting:: {response=}")
-        if response["game"]["state"] == state:
-            break
-        time.sleep(2)
+    print(f"Games: {len(history)} | Move Stats: [+{best}|-{worst}|÷{mean}]")

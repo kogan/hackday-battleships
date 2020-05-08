@@ -9,7 +9,7 @@ SHIP_CONFIG = [
     {"count": 1, "length": 5},
     {"count": 1, "length": 4},
     {"count": 2, "length": 3},
-    {"count": 1, "length": 2}
+    {"count": 1, "length": 2},
 ]
 
 
@@ -56,13 +56,20 @@ class Board:
 
     @classmethod
     def empty(cls, size: int):
-        tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
+        tiles = [
+            [Tile(Point(y, x), state=State.Unknown) for x in range(size)]
+            for y in range(size)
+        ]
         return Board(tiles=tiles, size=size)
 
 
 class ShipPlacer:
 
-    @classmethod
+    """
+    >>> placer = ShipPlacer()
+    >>> placer.random_ships(size=10)
+    """
+
     def random_ships(self, size, ship_config=None):
         ships = []
         # place ships randomly on board
@@ -71,23 +78,68 @@ class ShipPlacer:
             ship_config = SHIP_CONFIG
 
         for ship_type in ship_config:
-            count = ship_type['count']
-            length = ship_type['length']
+            count = ship_type["count"]
+            length = ship_type["length"]
 
             for c in range(count):
-                orientation = random.choice(list(Orientation))
-                if orientation == Orientation.Vertical:
-                    x = random.randrange(0, size)
-                    y = random.randrange(0, size - length)
-                else:
-                    x = random.randrange(0, size - length)
-                    y = random.randrange(0, size)
+                is_clash = True
+                while is_clash:
+                    orientation = random.choice(list(Orientation))
+                    if orientation == Orientation.Vertical:
+                        x = random.randrange(0, size)
+                        y = random.randrange(0, size - length)
+                    else:
+                        x = random.randrange(0, size - length)
+                        y = random.randrange(0, size)
 
-                # TODO: collision detection
-                new_ship = Ship(position=Point(x, y), length=length, orientation=orientation)
+                    # TODO: collision detection
+                    new_ship = Ship(
+                        position=Point(x, y), length=length, orientation=orientation
+                    )
+                    is_clash = self.clash(ships, new_ship)
+                    if is_clash:
+                        print("clash!")
+
                 ships.append(new_ship)
 
         return ships
+
+    def clash(self, ships, new_ship):
+        # Detect if current placement clashes with existing ships
+        if not ships:
+            return False
+
+        all_ship_points = []
+        for ship in ships:
+            if ship.orientation == Orientation.Horizontal:
+                ship_points = [
+                    Point(ship.position.x + i, ship.position.y)
+                    for i in range(ship.length)
+                ]
+            else:
+                ship_points = [
+                    Point(ship.position.x, ship.position.y + j)
+                    for j in range(ship.length)
+                ]
+            all_ship_points.extend(ship_points)
+
+        if new_ship.orientation == Orientation.Horizontal:
+            new_ship_points = [
+                Point(new_ship.position.x + i, new_ship.position.y)
+                for i in range(new_ship.length)
+            ]
+        else:
+            new_ship_points = [
+                Point(new_ship.position.x, new_ship.position.y + j)
+                for j in range(new_ship.length)
+            ]
+
+        # enumerate all existing ship points to see if there's overlap
+        for p in new_ship_points:
+            if p in all_ship_points:
+                return True
+
+        return False
 
 
 class AttackResponse(enum.Enum):
@@ -147,7 +199,7 @@ class Engine:
             iterations += 1
         # If all else fails just walk through points one by one.
         iterations = 0
-        while iterations < self.size**2:
+        while iterations < self.size ** 2:
             x += 1
             if x == self.size:
                 x = 0
@@ -215,7 +267,7 @@ class TestCoordinator(Coordinator):
     def __init__(self, engine: Engine, max_moves=10):
         self.engine = engine
         self.game_board = engine.generate_board()
-        self.attacks : t.Set[Point] = set()
+        self.attacks: t.Set[Point] = set()
         self.moves = 0
         self.max_moves = max_moves
 
@@ -225,7 +277,11 @@ class TestCoordinator(Coordinator):
             response = AttackResponse.Invalid
         else:
             self.attacks.add(point)
-            response = AttackResponse.Hit if self.moves < self.max_moves else AttackResponse.Win
+            response = (
+                AttackResponse.Hit
+                if self.moves < self.max_moves
+                else AttackResponse.Win
+            )
         print(f"Attack: {point} | {response}")
         return response
 

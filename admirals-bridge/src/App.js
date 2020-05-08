@@ -40,10 +40,13 @@ function Navigator() {
         <Link to="/">Lobby</Link>
       </li>
       <li>
-        <Link to="/match/">Match Maker</Link>
+        <Link to="/match/">Battle!</Link>
       </li>
       <li>
         <Link to="/results/">Results</Link>
+      </li>
+      <li>
+        <Link to="/settings/">Settings</Link>
       </li>
     </NavbarUl>
   );

@@ -285,36 +285,41 @@ class BoardState(object):
         return OrientationHorizontal
 
     def next_move(self):
-        all_placements = self.enumerate_all_placements()
-        if self.history and self.history[-1]["result"] == "HIT":
-            prev_coord = self.history[-1]["coordinate"]
-            if self.hit_mode is None:
-                # activate hit mode
-                self.hit_mode = (prev_coord, len(self.history) - 1)
-                x, y = prev_coord
-                candidates = []
-                candidates.append((x, y + 1))
-                candidates.append((x + 1, y))
-                candidates.append((x, y - 1))
-                candidates.append((x - 1, y))
-                all_placements = filter(lambda coord: coord in candidates, all_placements)
-            else:
-                (first_hit_coord, first_hit_move_index) = self.hit_mode
-                hit_mode_moves = self.history[first_hit_move_index:]
-                hit_mode_moves_hit = filter(lambda x: x["result"] == "HIT", hit_mode_moves)
-                hit_mode_moves_miss = filter(lambda x: x["result"] == "MISS", hit_mode_moves)
-
-                direction = self.direction(hit_mode_moves_hit, first_hit_coord)
-                if direction is None:
-                    direction = self.direction(hit_mode_moves_miss, first_hit_coord)
-
-                if direction == OrientationVertical:
-                    all_placements = filter(lambda coord: coord[0] == first_hit_coord[0], all_placements)
+        try:
+            all_placements = self.enumerate_all_placements()
+            if self.history and self.history[-1]["result"] == "HIT":
+                prev_coord = self.history[-1]["coordinate"]
+                if self.hit_mode is None:
+                    # activate hit mode
+                    self.hit_mode = (prev_coord, len(self.history) - 1)
+                    x, y = prev_coord
+                    candidates = []
+                    candidates.append((x, y + 1))
+                    candidates.append((x + 1, y))
+                    candidates.append((x, y - 1))
+                    candidates.append((x - 1, y))
+                    all_placements = filter(lambda coord: coord in candidates, all_placements)
                 else:
-                    all_placements = filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)
+                    (first_hit_coord, first_hit_move_index) = self.hit_mode
+                    hit_mode_moves = self.history[first_hit_move_index:]
+                    hit_mode_moves_hit = filter(lambda x: x["result"] == "HIT", hit_mode_moves)
+                    hit_mode_moves_miss = filter(lambda x: x["result"] == "MISS", hit_mode_moves)
 
-        return Counter(all_placements).most_common(1)[0][0]
+                    direction = self.direction(hit_mode_moves_hit, first_hit_coord)
+                    if direction is None:
+                        direction = self.direction(hit_mode_moves_miss, first_hit_coord)
 
+                    if direction == OrientationVertical:
+                        all_placements = filter(lambda coord: coord[0] == first_hit_coord[0], all_placements)
+                    else:
+                        all_placements = filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)
+
+            return Counter(all_placements).most_common(1)[0][0]
+        except Exception:
+            sys.stdout.write("EXCEPTION #############################")
+            for k,v in self.board_state.items():
+                if v is None:
+                    return k
 
 def phase_attack(session, url, game_id, config):
     """

@@ -1,5 +1,4 @@
 import itertools
-import json
 import operator
 import os
 import random
@@ -8,11 +7,11 @@ import time
 from collections import Counter
 from dataclasses import asdict, dataclass
 from enum import Enum
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import List, Tuple
 from urllib.parse import urljoin
 
-import requests
+import aiohttp
+from fastapi import FastAPI, Body
 
 # Copied for your convenience
 OrientationVertical = "vertical"
@@ -129,16 +128,19 @@ def print_2d_array(arr):
     sys.stdout.write("\n")
 
 
-def phase_join(session, url, game_id):
-    response = session.post(urljoin(url, f"/api/game/{game_id}/join/"))
-    response.raise_for_status()
-    config = response.json()["game"]
+async def phase_join(session, url, game_id):
+    url = urljoin(url, f"/api/game/{game_id}/join/")
+    async with session.post(url) as resp:
+        resp.raise_for_status()
+        response = await resp.json()
+        config = response["game"]
     return config
 
 
-def phase_place(session, url, game_id, config):
+async def phase_place(session, url, game_id, config):
     ships = make_ship_placement(config["board_size"], config["ship_config"])
-    session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
+    url = urljoin(url, f"/api/game/{game_id}/place/")
+    await session.post(url, json=ships)
 
 
 def clear_heatmap(new_size):
@@ -152,7 +154,7 @@ def mark_hit_on_heatmap(x, y):
     RUNNING_HEAT_MAP[(x, y)] += 1
 
 
-def phase_attack(session, url, game_id, config):
+async def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
@@ -175,8 +177,8 @@ def phase_attack(session, url, game_id, config):
             x, y = hit_hunter(board_state, ship_hit)
         if x == -1:
             break
-        response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
-        response = response.json()
+        async with session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y)) as resp:
+            response = await resp.json()
         turns += 1
         if "result" not in response:
             if response["errors"] == ["Game is not in attack phase"]:
@@ -201,10 +203,9 @@ def phase_attack(session, url, game_id, config):
 
             num_hit += 1
 
-
-        print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
-        if response["result"] != "MISS":
-            print_attack_board(board_state)
+        # print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
+        # if response["result"] != "MISS":
+        #     print_attack_board(board_state)
 
     if num_hit == expected_hits:
         print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
@@ -213,8 +214,6 @@ def phase_attack(session, url, game_id, config):
     print_attack_board(board_state)
     print("Num turns:", turns)
     print("Score:", turns - num_hit)
-
-    print(RUNNING_HEAT_MAP)
 
 
 def hit_hunter(board_state, start_coords):
@@ -268,13 +267,14 @@ def hit_hunter(board_state, start_coords):
     print('Boat moved!?')
     return -1, -1
 
+
 def choose_next_coord_heat(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
     for coord, _ in RUNNING_HEAT_MAP.most_common(20):
         x, y = coord
         if board_state[y][x] == CoordinateState.UNKNOWN:
-            print("From heatmap")
             return x, y
     return choose_next_coord_random(board_state)
+
 
 def choose_next_coord_random(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
     tries = 0
@@ -373,72 +373,65 @@ def print_attack_board(state: List[List[CoordinateState]]):
     print("\n")
 
 
-def wait_for_state(session, url, game_id, state):
+async def wait_for_state(session, url, game_id, state):
+    url = urljoin(url, f"/api/game/{game_id}/")
     while True:
-        response = session.get(urljoin(url, f"/api/game/{game_id}/")).json()
-        if response["game"]["state"] == "finished":
-            raise Exception("Game state is finished!")
-        if response["game"]["state"] == state:
-            break
+        async with session.get(url) as resp:
+            response = await resp.json()
+            if response["game"]["state"] == "finished":
+                raise Exception("Game state is finished!")
+            if response["game"]["state"] == state:
+                break
         time.sleep(5)
 
 
-def play_game(url: str, token: str, game_id: str):
-    session = requests.Session()
-    session.headers.update(dict(Authorization=f"Token {token}"))
-    print("------------joining-----------------")
-    config = phase_join(session, url, game_id)
-    print("-------waiting for opponent---------")
-    wait_for_state(session, url, game_id, "setup")
-    print("---------placing ships--------------")
-    phase_place(session, url, game_id, config)
-    print("-------waiting for opponent---------")
-    wait_for_state(session, url, game_id, "attack")
-    print("-----------attacking----------------")
-    phase_attack(session, url, game_id, config)
+async def play_game(url: str, token: str, game_id: str):
+    headers = dict(Authorization=f"Token {token}")
+    async with aiohttp.ClientSession(headers=headers) as session:
+        print("------------joining-----------------")
+        config = await phase_join(session, url, game_id)
+        print("-------waiting for opponent---------")
+        await wait_for_state(session, url, game_id, "setup")
+        print("---------placing ships--------------")
+        await phase_place(session, url, game_id, config)
+        print("-------waiting for opponent---------")
+        await wait_for_state(session, url, game_id, "attack")
+        print("-----------attacking----------------")
+        await phase_attack(session, url, game_id, config)
 
 
-class Handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        try:
-            content_length = int(self.headers["Content-Length"])
-            body = json.loads(self.rfile.read(content_length).decode("utf-8"))
-        except Exception:
-            self.send_response(400, "Invalid Request")
-            self.end_headers()
-            return
-        try:
-            play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
-        except Exception as e:
-            print(e)
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
+app = FastAPI()
 
 
-def run():
-    server_address = ("", int(sys.argv[1]))
-    httpd = HTTPServer(server_address, Handler)
-    httpd.serve_forever()
+@app.post("/")
+async def read_root(url: str = Body(...), game_id: str = Body(...)):
+    await play_game(url, os.environ.get("GAME_TOKEN"), game_id)
+    return {}
+
+
+def train(ship_config, board_size):
+    for i in range(1_000):
+        for ship in make_ship_placement(board_size, ship_config):
+            ship = DataShip(**ship)
+            for x, y in get_occupied_squares(ship):
+                mark_hit_on_heatmap(x, y)
+
+    top = dict(RUNNING_HEAT_MAP.most_common(30))
+    max_val = max(top.values())
+    min_val = min(top.values())
+    export_data = Counter()
+    for key, val in top.items():
+        export_data[key] = int(((val - min_val) / (max_val - min_val)) * 10) + 10
+    print(export_data)
 
 
 if __name__ == "__main__":
-    run()
-
-    # ship_config = [{"count": 1, "length": 5}, {"count": 1, "length": 4}, {"count": 2, "length": 3},
-    #                {"count": 1, "length": 2}]
-    # board_size = 10
-    # for i in range(1_000):
-    #     for ship in make_ship_placement(board_size, ship_config):
-    #         ship = DataShip(**ship)
-    #         for x, y in get_occupied_squares(ship):
-    #             mark_hit_on_heatmap(x, y)
-    # print(RUNNING_HEAT_MAP)
-    #
-    # top = dict(RUNNING_HEAT_MAP.most_common(30))
-    # max_val = max(top.values())
-    # min_val = min(top.values())
-    # export_data = Counter()
-    # for key, val in top.items():
-    #     export_data[key] = int(((val - min_val) / (max_val - min_val)) * 10) + 10
-    # print(max_val, min_val, export_data)
+    train(
+        ship_config=[
+            {"count": 1, "length": 5},
+            {"count": 1, "length": 4},
+            {"count": 2, "length": 3},
+            {"count": 1, "length": 2},
+        ],
+        board_size=10,
+    )

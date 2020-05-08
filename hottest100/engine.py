@@ -1,11 +1,12 @@
 import enum
-from copy import deepcopy
 import random
 import statistics
 import typing as t
 from collections import deque
+from copy import deepcopy
 from dataclasses import asdict, dataclass
 from pprint import pprint
+from urllib.parse import urljoin
 
 SHIP_CONFIG = [
     {"count": 1, "length": 5},
@@ -498,3 +499,11 @@ def get_ships(size, ship_config=None):
             )
         )
     return out
+
+
+def setup(session, url, game_id):
+    config_url = urljoin(url, f"/api/game/{game_id}/")
+    config = session.get(config_url)
+    size, ship_config = config["board_size"], config["ship_config"]
+    ships = get_ships(size, ship_config=ship_config)
+    return ships, config

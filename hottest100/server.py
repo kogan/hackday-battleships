@@ -2,14 +2,14 @@ import os
 from flask import Flask, request
 import requests
 
-from .engine import get_ships, attack
+from .engine import setup, attack
 
 
 app = Flask(__name__)
 
 
 @app.route("/", methods=["POST"])
-def attack():
+def start_game():
     data = request.json
     token = os.environ.get("GAME_TOKEN")
     url = data["url"]
@@ -17,11 +17,6 @@ def attack():
 
     session = requests.Session()
     session.headers.update(dict(Authorization=f"Token {token}"))
-    join_url
-    config = session.post()
-
-    get_ships()
-
+    ships, config = setup(session, url, game_id)
+    attack(session, url, game_id, config)
     return "ok", 200
-
-# pass in a session

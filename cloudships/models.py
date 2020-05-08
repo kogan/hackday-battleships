@@ -84,7 +84,6 @@ class GameConfigManager(models.Manager):
 
 
 class GameConfig(models.Model):
-    name = models.CharField(max_length=255)
     board_size = models.IntegerField()
     ship_config = JSONField()
     player_1 = models.ForeignKey(

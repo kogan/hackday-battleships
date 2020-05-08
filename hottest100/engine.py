@@ -23,9 +23,9 @@ class Orientation(enum.Enum):
 
 
 class State(enum.Enum):
-    Unknown = "?"
-    Hit = "X"
-    Empty = "O"
+    Unknown = "  "
+    Hit = "💥"
+    Empty = "🌊"
 
 
 class Health(enum.Enum):
@@ -115,6 +115,10 @@ class Board:
     def empty(cls, size: int):
         tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
         return Board(tiles=tiles, size=size)
+
+    def print_board(self):
+        for row in self.tiles:
+            print("".join(tile.state.value for tile in row))
 
 
 class ShipPlacer:
@@ -388,6 +392,7 @@ class Engine:
                 tile.state = State.Empty
             elif response is AttackResponse.Invalid:
                 print(f"Uh Oh: we messed up with {attack}")
+        self.opponent_board.print_board()
 
 
 class HttpCoordinator:

@@ -262,6 +262,7 @@ class BoardState(object):
         return coordinates
 
     def enumerate_all_placements(self):
+        print(f"board_state={self.board_state}")
         all_coordinates = []
         for length, count in self.ships_alive.items():
             ship_coordinates = self.enumerate_ship_placements(length)
@@ -288,6 +289,7 @@ class BoardState(object):
         try:
             all_placements = self.enumerate_all_placements()
             print(f"unfiltered_move_count={len(all_placements)}")
+            print(f"ships_alive={self.ships_alive}")
             if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
                 prev_coord = self.history[-1]["coordinate"]
                 if self.hit_mode is None:
@@ -308,7 +310,8 @@ class BoardState(object):
 
                     direction = self.direction(hit_mode_moves_hit, first_hit_coord)
                     if direction is None:
-                        direction = self.direction(hit_mode_moves_miss, first_hit_coord)
+                        direction = self.opposite_direction(self.direction(hit_mode_moves_miss, first_hit_coord))
+
                     print(f"hit_mode_direction={direction}")
                     if direction == OrientationVertical:
                         candidates = []

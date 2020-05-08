@@ -5,6 +5,14 @@ from dataclasses import asdict, dataclass
 from collections import deque
 
 
+SHIP_CONFIG = [
+    {"count": 1, "length": 5},
+    {"count": 1, "length": 4},
+    {"count": 2, "length": 3},
+    {"count": 1, "length": 2}
+]
+
+
 class Orientation(enum.Enum):
     Vertical = "vertical"
     Horizontal = "horizontal"
@@ -50,6 +58,32 @@ class Board:
     def empty(cls, size: int):
         tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
         return Board(tiles=tiles, size=size)
+
+    def random_ships(self, ship_config=None):
+        self.ships = []
+        # place ships randomly on board
+        # XXX: this will not detect if there are too many ships to fit on the board and so will run forever
+        if ship_config is None:
+            ship_config = SHIP_CONFIG
+
+        for ship_type in ship_config:
+            count = ship_type['count']
+            length = ship_type['length']
+
+            for c in range(count):
+                orientation = random.choice(list(Orientation))
+                if orientation == Orientation.Vertical:
+                    x = random.randrange(0, self.size)
+                    y = random.randrange(0, self.size - length)
+                else:
+                    x = random.randrange(0, self.size - length)
+                    y = random.randrange(0, self.size)
+
+                # TODO: collision detection
+                new_ship = Ship(position=Point(x, y), length=length, orientation=orientation)
+                self.ships.append(new_ship)
+
+        return self.ships
 
 
 class AttackResponse(enum.Enum):

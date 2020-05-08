@@ -1,9 +1,11 @@
-from cloudships.models import BotServer, Game, GameException, GamePlayer, Orientation
+from cloudships.dispatcher import verify_game_secret
+from cloudships.models import BotServer, Game, GameConfig, GameException, GamePlayer, Orientation
 from django.http import Http404, JsonResponse
 from rest_framework import serializers
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 
 
 class ShipConfigSerializer(serializers.Serializer):
@@ -11,25 +13,11 @@ class ShipConfigSerializer(serializers.Serializer):
     count = serializers.IntegerField(required=True)
 
 
-class GameSerializer(serializers.Serializer):
-    board_size = serializers.IntegerField(default=10, required=False)
-    ship_config = ShipConfigSerializer(many=True, required=True, source="config.ships")
-
-
-class GameStateSerializer(GameSerializer):
+class GameDetailSerializer(serializers.Serializer):
     state = serializers.CharField()
     id = serializers.UUIDField()
-    moves = serializers.SerializerMethodField(method_name="get_move_stream")
     loser = serializers.SerializerMethodField(method_name="get_loser")
     is_draw = serializers.SerializerMethodField(method_name="get_is_draw")
-
-    def get_move_stream(self, game: Game):
-        if game.state != Game.States.FINISHED:
-            return []
-        return [
-            dict(x=move.x, y=move.y, player=move.player.player.username, result=move.result)
-            for move in game.move_stream
-        ]
 
     def get_loser(self, game: Game):
         if game.state != Game.States.FINISHED:
@@ -43,6 +31,20 @@ class GameStateSerializer(GameSerializer):
         if game.state != Game.States.FINISHED:
             return None
         return game.loser is None
+
+
+class GameStateSerializer(GameDetailSerializer):
+    board_size = serializers.IntegerField(default=10, required=False)
+    ship_config = ShipConfigSerializer(many=True, required=True, source="config.ships")
+    moves = serializers.SerializerMethodField(method_name="get_move_stream")
+
+    def get_move_stream(self, game: Game):
+        if game.state != Game.States.FINISHED:
+            return []
+        return [
+            dict(x=move.x, y=move.y, player=move.player.player.username, result=move.result)
+            for move in game.move_stream
+        ]
 
 
 class ShipSerializer(serializers.Serializer):
@@ -64,6 +66,7 @@ class FinishedPlayerSerializer(serializers.Serializer):
 
 class FinishGameSerializer(serializers.Serializer):
     players = FinishedPlayerSerializer(many=True)
+    secret = serializers.CharField(required=True)
 
 
 class PlayerSerializer(serializers.Serializer):
@@ -81,22 +84,11 @@ def players(request):
 @api_view(["POST"])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
-def create_game(request):
-    form = GameSerializer(data=request.data)
-    if not form.is_valid():
-        return JsonResponse(dict(errors=form.errors), status=400)
-    game = Game.objects.create(**form.validated_data)
-    return JsonResponse(dict(game_id=game.id))
-
-
-@api_view(["POST"])
-@authentication_classes([TokenAuthentication])
-@permission_classes([IsAuthenticated])
 def join_game(request, game_id=None):
     try:
-        game = Game.objects.join_game(game_id, request.user)
+        game = GamePlayer.objects.find_game(game_id, request.user).first().game
         return JsonResponse(dict(game=GameStateSerializer(instance=game).data))
-    except GameException as e:
+    except (GameException, AttributeError) as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
 
 
@@ -119,6 +111,7 @@ def place_ships(request, game_id=None):
         return JsonResponse(dict(errors=form.errors), status=400)
     try:
         GamePlayer.objects.add_ships(game_id, request.user, form.validated_data)
+        return JsonResponse(dict())
     except GameException as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
 
@@ -141,12 +134,45 @@ def attack(request, game_id=None):
 
 @api_view(["POST"])
 def finish_game(request, game_id=None):
-    # todo: authenticate this endpoint!
     form = FinishGameSerializer(data=request.data)
     if not form.is_valid():
         return JsonResponse(dict(errors=form.errors), status=400)
+    if not verify_game_secret(game_id, form.validated_data["secret"]):
+        return JsonResponse({}, status=401)
     try:
         Game.objects.finish_game(game_id, form.validated_data["players"])
         return JsonResponse(dict())
     except GameException as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
+
+
+class GameConfigSerializer(serializers.Serializer):
+    board_size = serializers.IntegerField()
+    id = serializers.IntegerField()
+    player_1 = serializers.CharField(source="player_1.user.username")
+    player_2 = serializers.CharField(source="player_2.user.username")
+    count = serializers.CharField(source="game_count")
+
+
+class GameConfigDetailSerializer(GameConfigSerializer):
+    games = GameDetailSerializer(source="game_set", many=True)
+
+
+class GameConfigListView(APIView):
+    def get(self, request, format=None):
+        cfgs = GameConfig.objects.all()
+        serializer = GameConfigSerializer(cfgs, many=True)
+        return JsonResponse(dict(games=serializer.data))
+
+
+class GameConfigDetailView(APIView):
+    def get_object(self, pk):
+        try:
+            return GameConfig.objects.get(pk=pk)
+        except GameConfig.DoesNotExist:
+            raise Http404
+
+    def get(self, request, pk, format=None):
+        cfg = self.get_object(pk)
+        serializer = GameConfigDetailSerializer(cfg)
+        return JsonResponse(dict(data=serializer.data))

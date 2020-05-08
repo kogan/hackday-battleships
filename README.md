@@ -140,31 +140,6 @@ Attacks are asynchronous. You won't see what your opponent plays until after the
 
 ### Endpoints
 
-#### Create a game
-`POST /api/game/create/`
-
-Request
-
-```
-{
-  board_size: Integer (optional, default=10)
-  ship_config: [
-    {
-      length: Integer (required)
-      count: Integer (required)
-    }
-  ] (required)
-}
-```
-
-Response
-
-```
-{
-  game_id: String
-}
-```
-
 ### Query game state
 `GET /api/game/<game_id/`
 
@@ -258,3 +233,24 @@ The `Submarine` is at position `(x=2, y=1, length=3, orientation=HORIZONTAL)`
 The `Frigate` is at position `(x=6, y=5, length=4, orientation=VERTICAL)`
 
 The `Patrol Boat` is at position `(x=0, y=9, length=2 orientation=HORIZONTAL)`
+
+
+## Cloud shell
+
+An environment variable `GOOGLE_APPLICATION_CREDENTIALS` needs to be set pointing to your credentials.
+These credentials can be generated with the command:
+
+`gcloud auth application-default login`
+`EXPORT GOOGLE_APPLICATION_CREDENTIALS=/path/to/application_default_credentials.json`
+
+(This is most commonly `~/.config/gcloud/application_default_credentials.json`)
+
+It would be a good idea to put that in your `.bashrc`.
+
+You'll also need to configure docker to be able to talk to GCR.
+
+`gcloud auth configure-docker`
+
+`cloudshell.py` allows connectivity with a Django shell as well as a PSQL client for production and UAT environments.
+
+`./cloudshell.py --project <project> [shell|psql]`

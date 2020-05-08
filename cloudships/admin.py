@@ -1,10 +1,9 @@
+from django import forms
 from django.conf.urls import url
 from django.contrib import admin
-from django import forms
 from django.contrib.admin import TabularInline
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
-from django.template.response import TemplateResponse
 from django.urls import reverse
 
 from .models import BotServer, Game, GameConfig, GameException, GameMove, GamePlayer, GameSetup
@@ -17,7 +16,7 @@ class PlayerInline(TabularInline):
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    readonly_fields = ('loser_display',)
+    readonly_fields = ("loser_display",)
     inlines = [PlayerInline]
 
     def loser_display(self, obj: Game):
@@ -56,25 +55,29 @@ class StartGameForm(forms.Form):
 class GameConfigAdmin(admin.ModelAdmin):
     def start_game(self, request, pk):
         config = get_object_or_404(GameConfig, pk=pk)
-        if request.method == 'POST':
-            form = StartGameForm(data=request.POST)
-            if form.is_valid():
-                game = GameConfig.objects.start_game(
-                    config_id=config.id,
-                    server_1=form.cleaned_data["player_1"],
-                    server_2=form.cleaned_data["player_2"],
-                )
-                return HttpResponseRedirect(reverse("admin:cloudships_game_change", args=(game.pk,)))
-        else:
-            form = StartGameForm()
-        return TemplateResponse(request, "admin/start_game.html", {"form": form})
+        game = config.create_game(request.build_absolute_uri("/"),)
+        return HttpResponseRedirect(reverse("admin:cloudships_game_change", args=(game.pk,)))
+
+    def start_all_games(self, request, pk):
+        config = get_object_or_404(GameConfig, pk=pk)
+        config.create_all_games(request.build_absolute_uri("/"))
+        return HttpResponseRedirect(
+            reverse("admin:cloudships_gameconfig_change", args=(config.pk,))
+        )
 
     def get_urls(self):
+
         return [
-           url(
-               r"^(\d+)/start_game/$",
-               self.admin_site.admin_view(self.start_game),
-               name="start-game",
-           ),
+            url(
+                r"^(\d+)/start_game/$",
+                self.admin_site.admin_view(self.start_game),
+                name="start-game",
+            ),
+            url(
+                r"^(\d+)/start_all_games/$",
+                self.admin_site.admin_view(self.start_all_games),
+                name="start-game",
+            ),
         ] + super().get_urls()
+
     pass

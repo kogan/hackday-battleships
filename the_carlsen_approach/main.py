@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urljoin
@@ -141,9 +142,9 @@ class BoardState(object):
     def make_move(self, x, y):
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
 
-        self.set_broard_state(response.json(), x, y)
+        self.set_board_state(response.json(), x, y)
 
-    def set_broard_state(self, response,x,y):
+    def set_board_state(self, response,x,y):
         self.board_state[(x,y)] = response["result"]
         if response["result"] == "SUNK":
             self.update_sunk_ship(x,y)
@@ -151,33 +152,75 @@ class BoardState(object):
     def update_sunk_ship(self, x,y):
         size = 1
         c = 1
-        while self.board_state.get([x+c,y] == "HIT"):
+        while self.board_state.get((x+c,y)) == "HIT":
             size +=1
-            self.board_state[[x+c,y] == "SUNK"]
-            c = c +1
+            self.board_state[(x+c,y)] = "SUNK"
+            c += 1
 
         c = 1
-        while self.board_state.get([x - c, y] == "HIT"):
+        while self.board_state.get((x-c,y)) == "HIT":
             size += 1
-            self.board_state[[x + c, y] == "SUNK"]
-            c = c + 1
+            self.board_state[(x-c,y)] = "SUNK"
+            c += 1
 
         c = 1
-        while self.board_state.get([x, y+c] == "HIT"):
+        while self.board_state.get((x,y+c)) == "HIT":
             size += 1
-            self.board_state[[x + c, y] == "SUNK"]
-            c = c + 1
+            self.board_state[(x,y + c)] = "SUNK"
+            c += 1
 
         c = 1
-        while self.board_state.get([x, y-c] == "HIT"):
+        while self.board_state.get((x,y-c)) == "HIT":
             size += 1
-            self.board_state[[x + c, y] == "SUNK"]
-            c = c + 1
+            self.board_state[(x,y-c)] = "SUNK"
+            c += 1
 
         self.ships_alive[size] = self.ships_alive[size] - 1
         if self.ships_alive[size] == 0:
             self.ships_alive.pop(size)
-        
+
+    def enumerate_ship_placements(self, ship_size):
+        coordinates = []  # list of coordinates with duplicates expected
+        for x, y in self.board_state:
+            up_coordinates = []
+            valid_placement = True
+            if (y + ship_size) < self.config["board_size"]:
+                for step in range(ship_size):
+                    coord = (x, y + step)
+                    if self.board_state[coord] in ['SUNK', 'MISS']:
+                        valid_placement = False
+                        break
+                    up_coordinates.append(coord)
+
+            if valid_placement:
+                coordinates.extend(up_coordinates)
+
+            right_coordinates = []
+            valid_placement = True
+            if (y + ship_size) < self.board_size:
+                for step in range(ship_size):
+                    coord = (x + step, y)
+                    if self.board_state[coord] in ['SUNK', 'MISS']:
+                        valid_placement = False
+                        break
+                    right_coordinates.append(coord)
+
+            if valid_placement:
+                coordinates.extend(right_coordinates)
+
+        return coordinates
+
+    def enumerate_all_placements(self):
+        all_coordinates = []
+        for length, count in self.ships_alive.items():
+            ship_coordinates = self.enumerate_ship_placements(length)
+            for _ in count:
+                all_coordinates += ship_coordinates
+        return Counter(all_coordinates)
+
+    def next_move(self):
+        return self.enumerate_all_placements().most_common(1)[0]
+
 
 def phase_attack(session, url, game_id, config):
     """

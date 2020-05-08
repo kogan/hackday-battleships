@@ -128,52 +128,6 @@ def phase_place(session, url, game_id, config):
     ships = make_ship_placement(config["board_size"], config["ship_config"])
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
-
-def enumerate_ships(board_state, ship_size):
-    coordinates = []  # list of coordinates with duplicates
-    for x, y in board_state.board_state:
-        up_coordinates = []
-        valid_placement = True
-        if (y + ship_size) < board_state.board_size:
-            for step in range(ship_size):
-                coord = (x, y + step)
-                if board_state[coord] in ['SUNK', 'MISS']:
-                    valid_placement = False
-                    break
-                up_coordinates.append(coord)
-
-        if valid_placement:
-            coordinates.extend(up_coordinates)
-
-        right_coordinates = []
-        valid_placement = True
-        if (y + ship_size) < board_state.board_size:
-            for step in range(ship_size):
-                coord = (x + step, y)
-                if board_state[coord] in ['SUNK', 'MISS']:
-                    valid_placement = False
-                    break
-                right_coordinates.append(coord)
-
-        if valid_placement:
-            coordinates.extend(right_coordinates)
-
-    return coordinates
-
-
-def enumerate_board(board_state):
-    all_coordinates = []
-    for length, count in board_state.ships_alive.items():
-        ship_coordinates = enumerate_ships(board_state, length)
-        for _ in count:
-            all_coordinates += ship_coordinates
-    return Counter(all_coordinates)
-
-
-def next_move(board_state):
-    return enumerate_board(board_state).most_common(1)[0]
-
-
 def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.

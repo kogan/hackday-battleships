@@ -11,7 +11,18 @@ export default class Graph extends React.Component {
     return (
       <Plot
         data={data}
-        layout={{ title: 'Win/Loss Plot', ...layout, width: 800, height: 600 }}
+        layout={{
+          title: 'Win/Loss Plot',
+          ...layout,
+          autosize: true,
+          xaxis: {
+            rangemode: "nonnegative",
+          },
+          yaxis: {
+            rangemode: "nonnegative"
+          }
+        }}
+        style={{ width: '100%', height: '100%'}}
       />
     )
   }

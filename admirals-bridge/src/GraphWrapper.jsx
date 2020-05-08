@@ -45,7 +45,10 @@ export default class GraphWrapper extends React.Component {
     }
   }
   
-  rand = () => parseInt(Math.random() * NUM_PLAYERS)
+  rand = () => {
+    const rawRandom = Math.min(0.99, 2.75 * Math.random()) * NUM_PLAYERS
+    return Math.floor(rawRandom)
+  }
 
   increaseGraphic = () => {
     const { player1, player2, layout, revision } = this.state;

@@ -17,9 +17,11 @@ export default class Graph extends React.Component {
           autosize: true,
           xaxis: {
             rangemode: "nonnegative",
+            gridcolor: "#999"
           },
           yaxis: {
-            rangemode: "nonnegative"
+            rangemode: "nonnegative",
+            gridcolor: "#999"
           },
           paper_bgcolor: "rgba(0,0,0,0)",
           plot_bgcolor: "rgba(0,0,0,0)",

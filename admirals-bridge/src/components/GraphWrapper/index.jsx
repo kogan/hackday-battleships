@@ -7,12 +7,18 @@ export default class GraphWrapper extends React.Component {
     player1: {
       x: [0],
       y: [0], 
-      name: 'Player 1'
+      name: 'Player 1',
+      line: {
+        width: 5
+      }
     },
     player2: {
       x: [0],
       y: [0],
-      name: 'Player 2'
+      name: 'Player 2',
+      line: {
+        width: 5
+      }
     },
     layout: {
       datarevision: 0

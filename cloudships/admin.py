@@ -48,11 +48,6 @@ class BotServerAdmin(admin.ModelAdmin):
     pass
 
 
-class StartGameForm(forms.Form):
-    player_1 = forms.ModelChoiceField(BotServer.objects.all())
-    player_2 = forms.ModelChoiceField(BotServer.objects.all())
-
-
 @admin.register(GameConfig)
 class GameConfigAdmin(admin.ModelAdmin):
     def start_game(self, request, pk):

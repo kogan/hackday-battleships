@@ -146,27 +146,123 @@ def phase_attack(session, url, game_id, config):
     expected_hits = sum(cfg["count"] * cfg["length"] for cfg in config["ship_config"])
     num_hit = 0
     turns = 0
+
+    ship_found = false
+    ship_hit = 0
+
     while num_hit < expected_hits:
-        x, y = choose_next_coord_seek(board_state)
-        response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
-        response = response.json()
-        turns += 1
-        if response["result"] == "MISS":
-            board_state[y][x] = CoordinateState.MISS
-        else:
-            board_state[y][x] = CoordinateState.HIT
-            num_hit += 1
-            if response["result"] == "SUNK":
-                mark_sunk(board_state, x, y)
+        if not ship_found:
+            x, y = choose_next_coord_seek(board_state)
+            response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
+            response = response.json()
+            turns += 1
+            if response["result"] == "MISS":
+                board_state[y][x] = CoordinateState.MISS
             else:
-                mark_hit(board_state, x, y)
-            print_attack_board(board_state)
+                ship_found = true
+                board_state[y][x] = CoordinateState.HIT
+
+                ship_hit += 1
+                num_hit += 1
+                if response["result"] == "SUNK":
+                    mark_sunk(board_state, x, y)
+                else:
+                    mark_hit(board_state, x, y)
+
+                print_attack_board(board_state)
+
+            # if response["result"] == "SUNK":
+            #     ship_found = false
+            #     ship_hit = 0
+
+        else:
+            hit_hunter(board_state , x, y, ship_hit)
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
 
     print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
     print_attack_board(board_state)
     print("Num turns:", turns)
     print("Score:", turns - num_hit)
+
+def hit_hunter(board_state, x, y, ship_hit, num_hit):
+
+    # local coord vars
+    tryX = x
+    tryY = y
+
+    # first try hitting up
+    up_success = True
+    down_success = False
+    left_success = False
+    right_success = False
+
+    #loop till sunk
+    while ship_found:
+        if up_success:
+            # try up
+            if board_state[tryY][tryX] == CoordinateState.UNKNOWN
+                response = try_coord(tryY, tryX)
+                if response["result"] == "MISS":
+                    board_state[tryY][tryX] = CoordinateState.MISS
+                    up_success = False
+                    down_success = True
+                    tryX = x - 1
+                    continue
+                elif response["result"] == "HIT":
+                    board_state[tryY][tryX] = CoordinateState.HIT
+                    up_success = True
+                    tryX += 1
+                    ship_hit += 1
+                    num_hit += 1
+                    continue
+                else:
+                    board_state[y][x] = CoordinateState.HIT
+                    ship_found = false
+                    num_hit += 1
+                    ship_hit = 0
+                    break
+            else:
+                up_success = False
+                down_success = True
+                tryX = x - 1
+                continue
+        elif down_success:
+            # try down
+            if board_state[tryY][tryX] == CoordinateState.UNKNOWN
+                response = try_coord(tryY, tryX)
+                if response["result"] == "MISS":
+                    board_state[tryY][tryX] = CoordinateState.MISS
+                    up_success = False
+                    down_success = True
+                    tryX = x - 1
+                    continue
+                elif response["result"] == "HIT":
+                    board_state[tryY][tryX] = CoordinateState.HIT
+                    up_success = True
+                    tryX += 1
+                    ship_hit += 1
+                    num_hit += 1
+                    continue
+                else:
+                    board_state[y][x] = CoordinateState.HIT
+                    ship_found = false
+                    num_hit += 1
+                    ship_hit = 0
+                    break
+            else:
+                up_success = False
+                down_success = True
+                tryX = x - 1
+                continue
+        elif left_success:
+            # try left
+        elif right_success:
+            # try right
+
+
+def try_coord(y, x):
+    response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
+    return response.json()
 
 
 def choose_next_coord_seek(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:

@@ -187,11 +187,11 @@ class ShipPlacer:
         if corner == "UL":
             start_x, start_y = 0, 0
         elif corner == "UR":
-            start_x, start_y = size, 0
+            start_x, start_y = size-1, 0
         elif corner == "DL":
-            start_x, start_y = 0, size
+            start_x, start_y = 0, size-1
         else:  # corner == 'DR'
-            start_x, start_y = size, size
+            start_x, start_y = size-1, size-1
         # direction to move outwards
         x_inc = 1 if start_x == 0 else -1
         y_inc = 1 if start_y == 0 else -1
@@ -201,6 +201,8 @@ class ShipPlacer:
 
         ships_to_place = deepcopy(ship_config)
         random.shuffle(ships_to_place)
+
+        #print("start: {},{}".format(start_x, start_y))
 
         ships = []
 
@@ -226,6 +228,8 @@ class ShipPlacer:
                         break
 
                 ships.append(new_ship)
+                #print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
+                #self.ship_repr(size, ships)
 
         return ships
 

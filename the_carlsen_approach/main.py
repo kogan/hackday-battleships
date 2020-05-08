@@ -162,24 +162,32 @@ class BoardState(object):
             size += 1
             self.board_state[(x + c, y)] = "SUNK"
             c += 1
+        else:
+            self.board_state[(x + c, y)] = "MISS"
 
         c = 1
         while self.board_state.get((x - c, y)) == "HIT":
             size += 1
             self.board_state[(x - c, y)] = "SUNK"
             c += 1
+        else:
+            self.board_state[(x - c, y)] = "MISS"
 
         c = 1
         while self.board_state.get((x, y + c)) == "HIT":
             size += 1
             self.board_state[(x, y + c)] = "SUNK"
             c += 1
+        else:
+            self.board_state[(x, y+c)] = "MISS"
 
         c = 1
         while self.board_state.get((x, y - c)) == "HIT":
             size += 1
             self.board_state[(x, y - c)] = "SUNK"
             c += 1
+        else:
+            self.board_state[(x, y-c)] = "MISS"
 
         self.ships_alive[size] = self.ships_alive[size] - 1
         if self.ships_alive[size] == 0:

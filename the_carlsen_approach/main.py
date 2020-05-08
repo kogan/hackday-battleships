@@ -168,6 +168,7 @@ class BoardState(object):
 
         self.history.append({'coordinate': (x, y), 'result': response["result"]})
         if response["result"] == "SUNK":
+            self.board[x][y] = " S "
             self.update_sunk_ship(x, y)
 
         print_2d_array(self.board)
@@ -187,34 +188,45 @@ class BoardState(object):
         while self.board_state.get((x + c, y)) == "HIT":
             size += 1
             self.board_state[(x + c, y)] = "SUNK"
+            self.board[x + c][y] = " S "
             c += 1
 
         c = 1
         while self.board_state.get((x - c, y)) == "HIT":
             size += 1
             self.board_state[(x - c, y)] = "SUNK"
+            self.board[x - c][y] = " S "
             c += 1
 
         c = 1
         while self.board_state.get((x, y + c)) == "HIT":
             size += 1
             self.board_state[(x, y + c)] = "SUNK"
+            self.board[x][y + c ] = " S "
             c += 1
 
         c = 1
         while self.board_state.get((x, y - c)) == "HIT":
             size += 1
             self.board_state[(x, y - c)] = "SUNK"
+            self.board[x][y - c ] = " S "
             c += 1
+
+
 
         for coord in self.board_state:
             is_sunk_in_surrrounding = any([self.board_state[x] == "SUNK" for x in self.surrounding_coords(coord)])
             if self.board_state[coord] not in ["SUNK", "HIT"] and is_sunk_in_surrrounding:
                 self.board_state[coord] = "MISS"
+                self.board[coord[0]][coord[1]] = ' o '
+
 
         self.ships_alive[size] = self.ships_alive[size] - 1
+        sys.stdout.write(str(size))
+        sys.stdout.write("\n")
         if self.ships_alive[size] == 0:
             self.ships_alive.pop(size)
+            sys.stdout.write(str(self.ships_alive))
 
     def enumerate_ship_placements(self, ship_size):
         coordinates = []  # list of coordinates with duplicates expected

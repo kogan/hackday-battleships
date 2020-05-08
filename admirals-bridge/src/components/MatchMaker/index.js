@@ -2,7 +2,7 @@ import React, {Fragment} from "react";
 import styled from "styled-components";
 import Button from "../Button";
 import {battleRequest} from '../../api.js'
-import { Link } from "react-router-dom";
+import { Link, useHistory } from "react-router-dom";
 import { StateContext } from "../../App";
 
 const VersusHeader = styled.h1`
@@ -21,11 +21,13 @@ const VersusHeader = styled.h1`
 const MatchMaker = () => {
   const {selectedPlayers, config} = React.useContext(StateContext);
   const [error, setError] = React.useState("");
+  let history = useHistory()
 
   const onBattleClick = () => {
     battleRequest(selectedPlayers[0], selectedPlayers[1]).then(result => {
       if (result) {
         console.log("Battle successfully launched")
+        history.push('/results')
       } else {
         setError("Failure in launching battle.. Please see error")
       }

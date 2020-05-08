@@ -146,6 +146,34 @@ def finish_game(request, game_id=None):
         return JsonResponse(dict(errors=[str(e)]), status=400)
 
 
+class BattleSerializer(serializers.Serializer):
+    player_1 = serializers.CharField()
+    player_2 = serializers.CharField()
+
+
+@api_view(["POST"])
+def trigger_battle(request):
+    form = BattleSerializer(data=request.data)
+
+    if not form.is_valid():
+        return JsonResponse(dict(errors=form.errors), status=400)
+
+    p1 = form.validated_data["player_1"]
+    p2 = form.validated_data["player_2"]
+
+    gcf = GameConfig.objects.filter(player_1__user__username=p1, player_2__user__username=p2).last()
+    # Try the other combo
+    if not gcf:
+        gcf = GameConfig.objects.filter(player_2__user__username=p1, player_1__user__username=p2).last()
+    if not gcf:
+        return JsonResponse(dict(errors=["cannot find game config with such players"]), status=400)
+    try:
+        gcf.create_all_games(request.build_absolute_uri("/"))
+        return JsonResponse(dict(), status=200)
+    except GameException as e:
+        return JsonResponse(dict(errors=[str(e)]), status=400)
+
+
 class GameConfigSerializer(serializers.Serializer):
     board_size = serializers.IntegerField()
     id = serializers.IntegerField()

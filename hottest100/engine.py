@@ -16,7 +16,7 @@ class State(enum.Enum):
     Empty = "O"
 
 
-@dataclass
+@dataclass(frozen=True)
 class Point:
     x: int
     y: int
@@ -147,15 +147,20 @@ class Engine:
 
 
 class TestCoordinator(Coordinator):
-    def __init__(self, engine: Engine):
+    def __init__(self, engine: Engine, max_moves=10):
         self.engine = engine
         self.game_board = engine.generate_board()
         self.attacks : t.Set[Point] = set()
         self.moves = 0
+        self.max_moves = max_moves
 
     def attack(self, point: Point) -> AttackResponse:
         self.moves += 1
-        response = AttackResponse.Hit if self.moves < 10 else AttackResponse.Win
+        if point in self.attacks:
+            response = AttackResponse.Invalid
+        else:
+            self.attacks.add(point)
+            response = AttackResponse.Hit if self.moves < self.max_moves else AttackResponse.Win
         print(f"Attack: {point} | {response}")
         return response
 
@@ -166,5 +171,6 @@ class TestCoordinator(Coordinator):
 if __name__ == "__main__":
     size = 10
     engine = Engine(size=size)
-    coordinator = TestCoordinator(engine)
+    coordinator = TestCoordinator(engine, max_moves=100)
     engine.play(coordinator)
+    print(f"Game finished with {coordinator.moves} moves")

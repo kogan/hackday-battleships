@@ -31,8 +31,6 @@ services:
     build: ./dispatcher
     environment:
       PORT: 80
-    volumes:
-      - ./dispatcher:/code
     links:
       - django
 

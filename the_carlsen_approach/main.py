@@ -16,7 +16,7 @@ import requests
 OrientationVertical = "vertical"
 OrientationHorizontal = "horizontal"
 
-
+print("running carlsen approach")
 @dataclass
 class DataShip(object):
     x: int
@@ -254,9 +254,10 @@ def phase_attack(session, url, game_id, config):
     bs = BoardState()
     bs.init(session, url, game_id, config)
     next_move = bs.next_move()
+    print(f"next_move={next_move}")
     while bs.make_move(next_move):
         next_move = bs.next_move()
-        
+        print(f"next_move={next_move}")
 
 
 def wait_for_state(session, url, game_id, state):

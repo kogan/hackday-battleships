@@ -50,6 +50,7 @@ services:
     environment:
       GAME_TOKEN: ${GAME_TOKEN_P2}
       PORT: 80
+      PYTHONUNBUFFERED: 1
     volumes:
       - ./the_carlsen_approach:/code
     links:

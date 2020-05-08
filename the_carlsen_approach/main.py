@@ -25,7 +25,6 @@ class DataShip(object):
     orientation: str
 
 
-
 def get_squares(start_x, start_y, length, orientation):
     if orientation == OrientationVertical:
         return {(start_x, start_y + xlate) for xlate in range(length)}
@@ -40,15 +39,15 @@ def get_surrounding_squares(ship):
     if ship.orientation == OrientationVertical:
         return (
             get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-            .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 1, ship.orientation))
-            .union({(ship.x, ship.y - 1), (ship.x, ship.y + ship.length)})
-            .union(get_occupied_squares(ship))
+                .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 1, ship.orientation))
+                .union({(ship.x, ship.y - 1), (ship.x, ship.y + ship.length)})
+                .union(get_occupied_squares(ship))
         )
     return (
         get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-        .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 1, ship.orientation))
-        .union({(ship.x - 1, ship.y), (ship.x + ship.length, ship.y)})
-        .union(get_occupied_squares(ship))
+            .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 1, ship.orientation))
+            .union({(ship.x - 1, ship.y), (ship.x + ship.length, ship.y)})
+            .union(get_occupied_squares(ship))
     )
 
 
@@ -129,6 +128,7 @@ def phase_place(session, url, game_id, config):
     ships = make_ship_placement(config["board_size"], config["ship_config"])
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
+
 class BoardState(object):
     def init(self, session, url, game_id, config):
         self.config = config
@@ -148,36 +148,36 @@ class BoardState(object):
 
         self.set_board_state(response.json(), x, y)
 
-    def set_board_state(self, response,x,y):
-        self.board_state[(x,y)] = response["result"]
+    def set_board_state(self, response, x, y):
+        self.board_state[(x, y)] = response["result"]
         self.history.append({'coordinate': (x, y), 'result': response["result"]})
         if response["result"] == "SUNK":
-            self.update_sunk_ship(x,y)
+            self.update_sunk_ship(x, y)
 
-    def update_sunk_ship(self, x,y):
+    def update_sunk_ship(self, x, y):
         size = 1
         c = 1
-        while self.board_state.get((x+c,y)) == "HIT":
-            size +=1
-            self.board_state[(x+c,y)] = "SUNK"
+        while self.board_state.get((x + c, y)) == "HIT":
+            size += 1
+            self.board_state[(x + c, y)] = "SUNK"
             c += 1
 
         c = 1
-        while self.board_state.get((x-c,y)) == "HIT":
+        while self.board_state.get((x - c, y)) == "HIT":
             size += 1
-            self.board_state[(x-c,y)] = "SUNK"
+            self.board_state[(x - c, y)] = "SUNK"
             c += 1
 
         c = 1
-        while self.board_state.get((x,y+c)) == "HIT":
+        while self.board_state.get((x, y + c)) == "HIT":
             size += 1
-            self.board_state[(x,y + c)] = "SUNK"
+            self.board_state[(x, y + c)] = "SUNK"
             c += 1
 
         c = 1
-        while self.board_state.get((x,y-c)) == "HIT":
+        while self.board_state.get((x, y - c)) == "HIT":
             size += 1
-            self.board_state[(x,y-c)] = "SUNK"
+            self.board_state[(x, y - c)] = "SUNK"
             c += 1
 
         self.ships_alive[size] = self.ships_alive[size] - 1
@@ -230,10 +230,10 @@ class BoardState(object):
             x = last_move.coord[0]
             y = last_move.coord[0]
             candidates = []
-            candidates.append((x,y+1))
-            candidates.append((x+1,y))
-            candidates.append((x,y-1))
-            candidates.append((x-1,y-1))
+            candidates.append((x, y + 1))
+            candidates.append((x + 1, y))
+            candidates.append((x, y - 1))
+            candidates.append((x - 1, y - 1))
             all_placements = filter(lambda coord: coord in candidates, all_placements)
         return Counter(all_placements).most_common(1)[0]
 
@@ -243,8 +243,6 @@ def phase_attack(session, url, game_id, config):
     Attack a random coordinate that hasn't been attacked before.
     """
     bs = BoardState(session, url, game_id, config)
-
-
 
 
 def wait_for_state(session, url, game_id, state):

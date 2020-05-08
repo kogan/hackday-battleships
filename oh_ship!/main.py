@@ -5,6 +5,7 @@ import os
 import random
 import sys
 import time
+from collections import Counter
 from dataclasses import asdict, dataclass
 from enum import Enum
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -16,6 +17,9 @@ import requests
 # Copied for your convenience
 OrientationVertical = "vertical"
 OrientationHorizontal = "horizontal"
+
+RUNNING_HEAT_MAP_SIZE = 0
+RUNNING_HEAT_MAP = Counter()
 
 
 @dataclass
@@ -137,46 +141,59 @@ def phase_place(session, url, game_id, config):
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
 
+def clear_heatmap(new_size):
+    global RUNNING_HEAT_MAP
+    global RUNNING_HEAT_MAP_SIZE
+    RUNNING_HEAT_MAP_SIZE = new_size
+    RUNNING_HEAT_MAP = Counter()
+
+
+def mark_hit_on_heatmap(x, y):
+    RUNNING_HEAT_MAP[(x, y)] += 1
+
+
 def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
     board_size = config["board_size"]
+    if not RUNNING_HEAT_MAP or RUNNING_HEAT_MAP_SIZE != board_size:
+        clear_heatmap(board_size)
     board_state = [[CoordinateState.UNKNOWN for _ in range(board_size)] for _ in range(board_size)]
     expected_hits = sum(cfg["count"] * cfg["length"] for cfg in config["ship_config"])
     num_hit = 0
     turns = 0
 
-    ship_found = false
-    ship_hit = 0
+    ship_found = False
+    ship_hit = None
+
 
     while num_hit < expected_hits:
         if not ship_found:
-            x, y = choose_next_coord_seek(board_state)
-            response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
-            response = response.json()
-            turns += 1
-            if response["result"] == "MISS":
-                board_state[y][x] = CoordinateState.MISS
-            else:
-                ship_found = true
-                board_state[y][x] = CoordinateState.HIT
-
-                ship_hit += 1
-                num_hit += 1
-                if response["result"] == "SUNK":
-                    mark_sunk(board_state, x, y)
-                else:
-                    mark_hit(board_state, x, y)
-
-                print_attack_board(board_state)
-
-            # if response["result"] == "SUNK":
-            #     ship_found = false
-            #     ship_hit = 0
-
+            x, y = choose_next_coord_heat(board_state)
         else:
-            hit_hunter(board_state , x, y, ship_hit)
+            x, y = choose_next_coord_random(board_state)
+            #x, y = hit_hunter(board_state, ship_hit)
+        response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
+        response = response.json()
+        turns += 1
+        if response["result"] == "MISS":
+            board_state[y][x] = CoordinateState.MISS
+        else:
+            if response["result"] == "SUNK":
+                # Out of ship found mode
+                ship_found = False
+            elif not ship_found:
+                # Move to ship found mode
+                ship_found = True
+                ship_hit = (x, y)
+            board_state[y][x] = CoordinateState.HIT
+            mark_hit_on_heatmap(x, y)
+
+            num_hit += 1
+
+            print_attack_board(board_state)
+
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
 
     print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
@@ -184,7 +201,10 @@ def phase_attack(session, url, game_id, config):
     print("Num turns:", turns)
     print("Score:", turns - num_hit)
 
-def hit_hunter(board_state, x, y, ship_hit, num_hit):
+    print(RUNNING_HEAT_MAP)
+
+
+def hit_hunter(board_state, start_coords):
 
     # local coord vars
     tryX = x
@@ -200,7 +220,7 @@ def hit_hunter(board_state, x, y, ship_hit, num_hit):
     while ship_found:
         if up_success:
             # try up
-            if board_state[tryY][tryX] == CoordinateState.UNKNOWN
+            if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
                 response = try_coord(tryY, tryX)
                 if response["result"] == "MISS":
                     board_state[tryY][tryX] = CoordinateState.MISS
@@ -228,7 +248,7 @@ def hit_hunter(board_state, x, y, ship_hit, num_hit):
                 continue
         elif down_success:
             # try down
-            if board_state[tryY][tryX] == CoordinateState.UNKNOWN
+            if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
                 response = try_coord(tryY, tryX)
                 if response["result"] == "MISS":
                     board_state[tryY][tryX] = CoordinateState.MISS
@@ -256,16 +276,21 @@ def hit_hunter(board_state, x, y, ship_hit, num_hit):
                 continue
         elif left_success:
             # try left
+            pass
         elif right_success:
             # try right
+            pass
 
 
-def try_coord(y, x):
-    response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
-    return response.json()
+def choose_next_coord_heat(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
+    for coord, _ in RUNNING_HEAT_MAP.most_common(20):
+        x, y = coord
+        if board_state[y][x] == CoordinateState.UNKNOWN:
+            print("From heatmap")
+            return x, y
+    return choose_next_coord_random(board_state)
 
-
-def choose_next_coord_seek(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
+def choose_next_coord_random(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
     tries = 0
     while True:
         tries += 1
@@ -275,12 +300,16 @@ def choose_next_coord_seek(board_state: List[List[CoordinateState]]) -> Tuple[in
             return x, y
         if tries > 10:
             print("Warn: More than 10 tries.")
-            for y, row in enumerate(board_state):
-                for x, state in enumerate(row):
-                    if state == CoordinateState.UNKNOWN:
-                        return x, y
-            print("Exhausted all coords?!")
-            return 0, 0
+            return choose_next_coord_scan(board_state)
+
+
+def choose_next_coord_scan(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
+    for y, row in enumerate(board_state):
+        for x, state in enumerate(row):
+            if state == CoordinateState.UNKNOWN:
+                return x, y
+    print("Exhausted all coords?!")
+    return 0, 0
 
 
 def mark_hit(board_state: List[List[CoordinateState]], x: int, y: int):

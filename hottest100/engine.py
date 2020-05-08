@@ -240,12 +240,13 @@ class Engine:
         return Point(x, y)
 
     def _attack_get_target_mode_point(self) -> Point:
-        if len(self.attack_queue):
-            return self.attack_queue.popleft()
-        else:
-            # Queue exhausted. Switch off target mode.
-            self.is_attack_mode_target = False
-            return self._attack_get_random_disparate_point_with_state_unknown()
+        while len(self.attack_queue):
+            attack = self.attack_queue.popleft()
+            if self.opponent_board.tiles[attack.x][attack.y].state == State.Unknown:
+                return attack
+        # Queue exhausted. Switch off target mode.
+        self.is_attack_mode_target = False
+        return self._attack_get_random_disparate_point_with_state_unknown()
 
     def _attack_enqueue_if_unknown(self, point):
         if self.opponent_board.tiles[point.x][point.y].state == State.Unknown:
@@ -276,7 +277,7 @@ class Engine:
         response = AttackResponse.Miss
         while response != AttackResponse.Win:
             attack = self.get_attack()
-            response = coordinator.attack(self.get_attack())
+            response = coordinator.attack(attack)
             tile = self.opponent_board.tiles[attack.x][attack.y]
             if response is AttackResponse.Hit:
                 tile.state = State.Hit

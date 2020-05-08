@@ -16,34 +16,47 @@ class PlayerInline(TabularInline):
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    readonly_fields = ("loser_display",)
+    list_display = ["id", "state", "loser_display", "winner_display"]
+    readonly_fields = ("loser_display", "winner_display")
     inlines = [PlayerInline]
 
     def loser_display(self, obj: Game):
         try:
             return obj.loser
-        except GameException as e:
-            return str(e)
+        except GameException:
+            return "-"
+
+    def winner_display(self, obj: Game):
+        try:
+            return obj.winner
+        except GameException:
+            return "-"
+
+    loser_display.short_description = "Loser"  # type: ignore
+    winner_display.short_description = "Winner"  # type: ignore
 
 
 @admin.register(GamePlayer)
 class GamePlayerAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["game", "player", "state"]
+    list_filter = ["game", "player", "state"]
 
 
 @admin.register(GameMove)
 class GameMoveAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["id", "player", "x", "y"]
+    list_filter = ["player__game"]
 
 
 @admin.register(GameSetup)
 class GameSetupAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["id", "player", "x", "y", "length", "orientation"]
+    list_filter = ["player"]
 
 
 @admin.register(BotServer)
 class BotServerAdmin(admin.ModelAdmin):
-    pass
+    list_display = ["user", "server_address"]
 
 
 class StartGameForm(forms.Form):
@@ -53,6 +66,9 @@ class StartGameForm(forms.Form):
 
 @admin.register(GameConfig)
 class GameConfigAdmin(admin.ModelAdmin):
+    list_display = ["id", "board_size", "player_1", "player_2", "count", "ship_config"]
+    list_filter = ["player_1", "player_2"]
+
     def start_game(self, request, pk):
         config = get_object_or_404(GameConfig, pk=pk)
         game = config.create_game(request.build_absolute_uri("/"),)

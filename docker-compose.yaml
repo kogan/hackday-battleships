@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   db:
@@ -12,12 +12,12 @@ services:
   django:
     build: .
     environment:
-        DEBUG: "true"
-        DATABASE_URL: postgres://postgres:cloudships@db:5432/cloudships
-        SECRET_KEY: a-secret-key
-        PORT: 80
-        DISPATCH_URL: http://dispatcher/
-        PYTHONUNBUFFERED: 1
+      DEBUG: "true"
+      DATABASE_URL: postgres://postgres:cloudships@db:5432/cloudships
+      SECRET_KEY: a-secret-key
+      PORT: 80
+      DISPATCH_URL: http://dispatcher/
+      PYTHONUNBUFFERED: 1
     command: python manage.py runserver 0.0.0.0:80
     working_dir: /app/code
     volumes:
@@ -57,18 +57,18 @@ services:
     links:
       - django
 
-  player_hottest100:
+  hottest100:
     build: ./hottest100
     environment:
-      GAME_TOKEN: ${GAME_TOKEN_P2}
+      GAME_TOKEN: ${GAME_TOKEN_JJJ}
       PORT: 80
     volumes:
       - ./hottest100:/code
     links:
       - django
 
-# the following are used to connect to prod/uat instances locally.
-# use with ./cloudshell.py
+  # the following are used to connect to prod/uat instances locally.
+  # use with ./cloudshell.py
   clouddb:
     image: gcr.io/cloudsql-docker/gce-proxy:1.16
     command: /cloud_sql_proxy -instances=${DB_INSTANCE}=tcp:0.0.0.0:5432 -credential_file=/config
@@ -93,7 +93,7 @@ services:
 
   cloudpsql:
     image: postgres:11.1
-    command: bash -c "sleep 2 ; psql"  # let the cloudshell start.
+    command: bash -c "sleep 2 ; psql" # let the cloudshell start.
     stdin_open: true
     tty: true
     environment:
@@ -105,4 +105,4 @@ services:
       - clouddb
 
 volumes:
-    pg_data:
+  pg_data:

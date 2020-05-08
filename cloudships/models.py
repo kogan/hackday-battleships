@@ -153,6 +153,9 @@ class Game(models.Model):
     config = models.ForeignKey(GameConfig, on_delete=models.CASCADE)
     objects = GameManager()
 
+    def __str__(self):
+        return f"{self.id} ({self.get_state_display()})"
+
     @cached_property
     def move_stream(self) -> t.List[Move]:
         """
@@ -233,6 +236,13 @@ class Game(models.Model):
         if l.player == ll.player:
             return l.player
         return None
+
+    @cached_property
+    def winner(self) -> t.Optional["GamePlayer"]:
+        loser = self.loser
+        if loser is None:
+            return None
+        return self.players.exclude(id=loser.id).get()
 
 
 class GamePlayerQuerySet(models.QuerySet):

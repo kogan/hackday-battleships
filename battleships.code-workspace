@@ -1,0 +1,17 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "editor.formatOnSave": true,
+        "python.autoComplete.extraPaths": [
+            "example_client/",
+            "hottest100/",
+        ],
+        "python.linting.mypyEnabled": true,
+        "python.analysis.openFilesOnly": true,
+        "python.analysis.logLevel": "Trace",
+    }
+}

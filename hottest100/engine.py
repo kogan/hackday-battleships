@@ -479,9 +479,28 @@ if __name__ == "__main__":
     print(f"Games: {len(history)} [Best: {best} |Worst: {worst}|Mean: {mean}]")
 
 
-def attack():
-    pass
-    # loop and use requests to attack
+def attack(session, url, game_id, config):
+    size = config["board_size"]
+    engine = Engine(size=size)
+
+    ship_config = config["ship_config"]
+    total_opponent_tiles = sum(map(lambda s: s["length"]*s["count"], ship_config))
+
+    while total_opponent_tiles:
+        attack = engine.get_attack()
+        tile = engine.opponent_board.tiles[attack.x][attack.y]
+        response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=attack.x, y=attack.y))
+        response = response.json()
+        res = response["result"]
+        if res == "MISS":
+            tile.state = State.Empty
+        elif res == "HIT":
+            tile.state = State.Hit
+            total_opponent_tiles -= 1
+            engine._attack_enqueue_adjacent(attack)
+        elif res == "SUNK":
+            tile.state = State.Hit
+            total_opponent_tiles -= 1
 
 
 def get_ships(size, ship_config=None):

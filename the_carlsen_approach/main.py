@@ -138,6 +138,7 @@ class BoardState(object):
         self.board_size = config["board_size"]
         self.board_state = {}
         self.ships_alive = {x['length']: x['alive'] for x in config["ship_config"]}
+        self.history = []
 
     def make_move(self, x, y):
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
@@ -146,6 +147,7 @@ class BoardState(object):
 
     def set_board_state(self, response,x,y):
         self.board_state[(x,y)] = response["result"]
+        self.history.append({'coordinate': (x, y), 'result': response["result"]})
         if response["result"] == "SUNK":
             self.update_sunk_ship(x,y)
 

@@ -83,7 +83,13 @@ class GameConfigManager(models.Manager):
         )
 
     def start_game(self, callback, config_id, server_1: BotServer, server_2: BotServer):
-        game = Game.objects.create(state=GameStates.JOIN_PHASE, config_id=config_id)
+        game = Game.objects.create(state=GameStates.SETUP_PHASE, config_id=config_id)
+        GamePlayer.objects.bulk_create(
+            [
+                GamePlayer(game=game, player=server_1.user),
+                GamePlayer(game=game, player=server_2.user),
+            ]
+        )
         dispatcher.dispatch(callback, game, server_1, server_2)
         return game
 
@@ -100,33 +106,27 @@ class GameConfig(models.Model):
 
 class GameManager(models.Manager):
     @transaction.atomic
-    def join_game(self, game_id: uuid.UUID, player: User) -> "Game":
-        qs = self.get_queryset().filter(pk=game_id, state=Game.States.JOIN_PHASE)
-        game = qs.select_for_update().first()
-        if game is None:
-            raise GameException("Not accepting joins")
-        players = list(GamePlayer.objects.filter(game=game).values_list("player_id", flat=True))
-        if player.pk in players:
-            raise GameException("Already joined this game")
-        if len(players) >= 2:
-            raise GameException("Game is full")
-        game.players.add(GamePlayer.objects.create(game=game, player=player))
-        if len(players) == 1:
-            game.state = game.States.SETUP_PHASE
-            game.save()
-        return game
-
     def finish_game(self, game_id, players):
-        game = Game.objects.filter(id=game_id).prefetch_related("players").first()
+        game = Game.objects.filter(id=game_id).select_for_update().first()
         if game is None:
             raise GameException("Game not found")
         player_map = {player["username"]: player["state"] for player in players}
-        with transaction.atomic():
-            for player in game.players.all():
+        # check to see if players have placed their ships
+        # - don't disqualify a timed out player if the opponent didn't place!
+        players = list(game.players.all())
+        if game.state == GameStates.SETUP_PHASE:
+            for player in players:
+                if GameSetup.objects.filter(player=player).exists():
+                    player.state = PlayerStates.FINISHED
+                else:
+                    player.state = PlayerStates.DNF
+        elif game.state == GameStates.ATTACK_PHASE:
+            for player in players:
                 player.state = player_map[player.player.username]
                 player.save()
-            game.state = GameStates.FINISHED
-            game.save()
+
+        game.state = GameStates.FINISHED
+        game.save()
 
 
 class Game(models.Model):
@@ -196,6 +196,15 @@ class Game(models.Model):
 
     @cached_property
     def loser(self) -> t.Optional["GamePlayer"]:
+        players = list(self.players.all())
+        dnf = None
+        for player in players:
+            if player.state == PlayerStates.DNF:
+                if dnf is not None:
+                    return None
+                dnf = player
+        if dnf is not None:
+            return dnf
         moves = self.move_stream
         # determine a loser by last 2 being same player
         # determine a draw by last 2 being different players

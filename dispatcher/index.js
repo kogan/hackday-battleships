@@ -14,10 +14,7 @@ const promiseWithTimeout = (timeoutMs, promise) => {
 const notifyPlayer = async ({ server_url, username }, game_id, url) => {
   try {
     await promiseWithTimeout(30 * 1000, () =>
-      axios.post(
-        server_url,
-        { game_id, url },
-      )
+      axios.post(server_url, { game_id, url })
     );
     return { username, state: "finished" };
   } catch (e) {
@@ -29,7 +26,7 @@ app.post("/", async (req, res) => {
   // requests come in.
 
   // wait for the 2 players
-  const { players, game_id, callback_url } = req.body;
+  const { players, game_id, callback_url, secret } = req.body;
   if (!players || !game_id || !callback_url) {
     res.sendStatus(400);
     res.send();
@@ -44,7 +41,8 @@ app.post("/", async (req, res) => {
 
   // send results back to server
   axios.post(`${callback_url}/api/game/${game_id}/finish/`, {
-    players: results
+    players: results,
+    secret
   });
 });
 

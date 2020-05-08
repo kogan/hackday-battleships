@@ -1,3 +1,4 @@
+from cloudships.dispatcher import verify_game_secret
 from cloudships.models import Game, GameException, GamePlayer, Orientation
 from django.http import Http404, JsonResponse
 from rest_framework import serializers
@@ -64,6 +65,7 @@ class FinishedPlayerSerializer(serializers.Serializer):
 
 class FinishGameSerializer(serializers.Serializer):
     players = FinishedPlayerSerializer(many=True)
+    secret = serializers.CharField(required=True)
 
 
 @api_view(["POST"])
@@ -82,9 +84,9 @@ def create_game(request):
 @permission_classes([IsAuthenticated])
 def join_game(request, game_id=None):
     try:
-        game = Game.objects.join_game(game_id, request.user)
+        game = GamePlayer.objects.find_game(game_id, request.user).first().game
         return JsonResponse(dict(game=GameStateSerializer(instance=game).data))
-    except GameException as e:
+    except (GameException, AttributeError) as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
 
 
@@ -129,10 +131,11 @@ def attack(request, game_id=None):
 
 @api_view(["POST"])
 def finish_game(request, game_id=None):
-    # todo: authenticate this endpoint!
     form = FinishGameSerializer(data=request.data)
     if not form.is_valid():
         return JsonResponse(dict(errors=form.errors), status=400)
+    if not verify_game_secret(game_id, form.validated_data["secret"]):
+        return JsonResponse({}, status=401)
     try:
         Game.objects.finish_game(game_id, form.validated_data["players"])
         return JsonResponse(dict())

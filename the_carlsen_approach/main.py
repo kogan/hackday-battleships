@@ -320,7 +320,7 @@ class BoardState(object):
                         for step in [-1,1]:
                             for move in hit_mode_moves_hit:
                                 candidates.append((move["coordinate"][0]+step, move["coordinate"][1]))
-                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                valid_candidates = [coord for coord in candidates if self.in_bounds(coord) and self.board_state[coord] is None]
                 random.shuffle(valid_candidates)
                 print(f"valid_candidate_count={len(valid_candidates)}")
                 if len(valid_candidates) != 0:
@@ -329,7 +329,8 @@ class BoardState(object):
 
             return Counter(all_placements).most_common(1)[0][0]
 
-        except Exception:
+        except Exception as e:
+            print(f"exception={e}")
             sys.stdout.write("EXCEPTION #############################")
             for k,v in self.board_state.items():
                 if v is None:

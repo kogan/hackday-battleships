@@ -299,6 +299,7 @@ class BoardState(object):
                     candidates.append((x + 1, y))
                     candidates.append((x, y - 1))
                     candidates.append((x - 1, y))
+
                 else:
                     (first_hit_coord, first_hit_move_index) = self.hit_mode
                     hit_mode_moves = self.history[first_hit_move_index:]
@@ -319,10 +320,10 @@ class BoardState(object):
                         for step in [-1,1]:
                             for move in hit_mode_moves_hit:
                                 candidates.append((move["coordinate"][0]+step, move["coordinate"][1]))
-
-                all_placements = [coord for coord in filter(lambda coord: coord in candidates, all_placements)]
-                if len(all_placements) == 0:
-                    all_placements = self.enumerate_all_placements()
+                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                random.shuffle(valid_candidates)
+                print(f"valid_candidate_count={len(valid_candidates)}")
+                return valid_candidates[0]
             return Counter(all_placements).most_common(1)[0][0]
 
         except Exception:

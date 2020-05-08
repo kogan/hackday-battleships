@@ -18,8 +18,8 @@ import requests
 OrientationVertical = "vertical"
 OrientationHorizontal = "horizontal"
 
-RUNNING_HEAT_MAP_SIZE = 0
-RUNNING_HEAT_MAP = Counter()
+RUNNING_HEAT_MAP_SIZE = 10
+RUNNING_HEAT_MAP = Counter({(4, 0): 20, (5, 0): 19, (3, 0): 18, (6, 0): 17, (5, 5): 16, (2, 0): 16, (5, 3): 15, (2, 7): 14, (3, 5): 14, (4, 5): 14, (4, 3): 13, (5, 2): 13, (5, 1): 13, (4, 2): 13, (2, 5): 13, (5, 4): 12, (3, 7): 12, (4, 4): 12, (2, 2): 12, (4, 1): 11, (5, 7): 11, (3, 2): 11, (5, 6): 11, (1, 5): 11, (1, 7): 11, (2, 3): 10, (3, 3): 10, (3, 6): 10, (6, 1): 10, (2, 6): 10})
 
 
 @dataclass
@@ -167,13 +167,14 @@ def phase_attack(session, url, game_id, config):
     ship_found = False
     ship_hit = None
 
-
     while num_hit < expected_hits:
         if not ship_found:
             x, y = choose_next_coord_heat(board_state)
         else:
-            x, y = choose_next_coord_random(board_state)
+            x, y = choose_next_coord_heat(board_state)
             #x, y = hit_hunter(board_state, ship_hit)
+        if x == -1:
+            break
         response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
         response = response.json()
         turns += 1
@@ -183,10 +184,13 @@ def phase_attack(session, url, game_id, config):
             if response["result"] == "SUNK":
                 # Out of ship found mode
                 ship_found = False
-            elif not ship_found:
-                # Move to ship found mode
-                ship_found = True
-                ship_hit = (x, y)
+                mark_sunk(board_state, x,  y)
+            else:
+                mark_hit(board_state, x,  y)
+                if not ship_found:
+                    # Move to ship found mode
+                    ship_found = True
+                    ship_hit = (x, y)
             board_state[y][x] = CoordinateState.HIT
             mark_hit_on_heatmap(x, y)
 
@@ -196,7 +200,10 @@ def phase_attack(session, url, game_id, config):
 
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
 
-    print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
+    if num_hit == expected_hits:
+        print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
+    else:
+        print("WTF??? didnt find something")
     print_attack_board(board_state)
     print("Num turns:", turns)
     print("Score:", turns - num_hit)
@@ -309,7 +316,7 @@ def choose_next_coord_scan(board_state: List[List[CoordinateState]]) -> Tuple[in
             if state == CoordinateState.UNKNOWN:
                 return x, y
     print("Exhausted all coords?!")
-    return 0, 0
+    return -1, -1
 
 
 def mark_hit(board_state: List[List[CoordinateState]], x: int, y: int):
@@ -433,3 +440,21 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+    # ship_config = [{"count": 1, "length": 5}, {"count": 1, "length": 4}, {"count": 2, "length": 3},
+    #                {"count": 1, "length": 2}]
+    # board_size = 10
+    # for i in range(1_000):
+    #     for ship in make_ship_placement(board_size, ship_config):
+    #         ship = DataShip(**ship)
+    #         for x, y in get_occupied_squares(ship):
+    #             mark_hit_on_heatmap(x, y)
+    # print(RUNNING_HEAT_MAP)
+    #
+    # top = dict(RUNNING_HEAT_MAP.most_common(30))
+    # max_val = max(top.values())
+    # min_val = min(top.values())
+    # export_data = Counter()
+    # for key, val in top.items():
+    #     export_data[key] = int(((val - min_val) / (max_val - min_val)) * 10) + 10
+    # print(max_val, min_val, export_data)

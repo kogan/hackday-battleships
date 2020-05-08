@@ -1,6 +1,6 @@
-import React, {Fragment} from "react";
+import React, { Fragment } from "react";
 import { Link } from "react-router-dom";
-import styled from 'styled-components'
+import styled from "styled-components";
 
 const MenuButton = styled.div`
   border: solid 3px #40a692;
@@ -15,18 +15,21 @@ const MenuButton = styled.div`
   &:hover {
     background-color: #40a692;
   }
-`
+`;
 
 const Lobby = () => (
   <Fragment>
+    <h1>Battleship</h1>
     <Link to="/match/">
       <MenuButton>Start</MenuButton>
     </Link>
     <Link to="/results/">
       <MenuButton>Battle Results</MenuButton>
     </Link>
-    <MenuButton>Settings</MenuButton>
+    <Link to="/settings/">
+      <MenuButton>Settings</MenuButton>
+    </Link>
   </Fragment>
-)
+);
 
 export default Lobby;

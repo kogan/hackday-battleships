@@ -7,10 +7,17 @@ import sys
 import time
 from collections import Counter
 from dataclasses import asdict, dataclass
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urljoin
 
 import requests
+import logging
+
+log = logging.getLogger(__name__)
+
+
+
+from flask import Flask, request, jsonify
+app = Flask(__name__)
 
 # Copied for your convenience
 OrientationVertical = "vertical"
@@ -283,26 +290,16 @@ def play_game(url: str, token: str, game_id: str):
     phase_attack(session, url, game_id, config)
 
 
-class Handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        try:
-            content_length = int(self.headers["Content-Length"])
-            body = json.loads(self.rfile.read(content_length).decode("utf-8"))
-        except Exception:
-            self.send_response(400, "Invalid Request")
-            self.end_headers()
-            return
-        play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-
+@app.route('/', methods=['POST'])
+def game():
+    body = request.json
+    log.info('in route')
+    play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
+    return jsonify()
 
 def run():
-    server_address = ("", int(sys.argv[1]))
-    httpd = HTTPServer(server_address, Handler)
-    httpd.serve_forever()
-
+    log.info('run')
+    app.run(host="", port=int(sys.argv[1]))
 
 if __name__ == "__main__":
     run()

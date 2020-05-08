@@ -1,15 +1,15 @@
-import enums
+import enum
 import random
 import typing as t
 from dataclasses import asdict, dataclass
 
 
-class Orientation(enums.Enum):
+class Orientation(enum.Enum):
     Vertical = "vertical"
     Horizontal = "horizontal"
 
 
-class State(enums.Enum):
+class State(enum.Enum):
     Unknown = "unknown"
     Hit = "hit"
     Empty = "empty"

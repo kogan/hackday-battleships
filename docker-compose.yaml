@@ -69,7 +69,7 @@ services:
   oh_ship:
     build: ./oh_ship!
     environment:
-      GAME_TOKEN: ${GAME_TOKEN_P1}
+      GAME_TOKEN: ${GAME_TOKEN_OH_SHIP}
       PORT: 80
       PYTHONUNBUFFERED: 1
     volumes:

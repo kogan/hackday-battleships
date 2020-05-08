@@ -179,6 +179,8 @@ def phase_attack(session, url, game_id, config):
         response = response.json()
         turns += 1
         if "result" not in response:
+            if response["errors"] == ["Game is not in attack phase"]:
+                return
             print("INVALID MOVE??", x, y, response)
             continue
         if response["result"] == "MISS":
@@ -374,6 +376,8 @@ def print_attack_board(state: List[List[CoordinateState]]):
 def wait_for_state(session, url, game_id, state):
     while True:
         response = session.get(urljoin(url, f"/api/game/{game_id}/")).json()
+        if response["game"]["state"] == "finished":
+            raise Exception("Game state is finished!")
         if response["game"]["state"] == state:
             break
         time.sleep(5)
@@ -403,7 +407,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_response(400, "Invalid Request")
             self.end_headers()
             return
-        play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
+        try:
+            play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
+        except Exception as e:
+            print(e)
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.end_headers()

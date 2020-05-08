@@ -1,10 +1,11 @@
 import React from "react"
-import Graph from '../../Graph'
+// import Graph from '../../Graph'
+import GraphWrapper from '../../GraphWrapper'
 
 const Results = () => (
   <div>
     <h3>Results</h3>
-    <Graph />
+    <GraphWrapper />
   </div>
 )
 

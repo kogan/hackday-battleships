@@ -154,6 +154,8 @@ def phase_attack(session, url, game_id, config):
 def wait_for_state(session, url, game_id, state):
     while True:
         response = session.get(urljoin(url, f"/api/game/{game_id}/")).json()
+        if response["game"]["state"] == "finished":
+            raise Exception("Game state finished. Abort")
         if response["game"]["state"] == state:
             break
         time.sleep(5)

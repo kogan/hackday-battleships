@@ -47,15 +47,26 @@ services:
       - django
 
   player2:
-    build: ./example_client
+    build: ./hottest100
     environment:
       GAME_TOKEN: ${GAME_TOKEN_P2}
       PORT: 80
       PYTHONUNBUFFERED: 1
     volumes:
-      - ./example_client:/code
+      - ./hottest100:/code
     links:
       - django
+
+  player_hottest100:
+    build: ./hottest100
+    environment:
+      GAME_TOKEN: ${GAME_TOKEN_P2}
+      PORT: 80
+    volumes:
+      - ./hottest100:/code
+    links:
+      - django
+
 # the following are used to connect to prod/uat instances locally.
 # use with ./cloudshell.py
   clouddb:

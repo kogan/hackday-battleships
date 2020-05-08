@@ -199,9 +199,10 @@ def phase_attack(session, url, game_id, config):
 
             num_hit += 1
 
-            print_attack_board(board_state)
 
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
+        if response["result"] != "MISS":
+            print_attack_board(board_state)
 
     if num_hit == expected_hits:
         print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")

@@ -119,14 +119,14 @@ class GameManager(models.Manager):
     def finish_game(self, game_id, players):
         game = (
             Game.objects.filter(id=game_id)
-            .prefetch_related(models.Prefetch("players", to_attr="prefetched_players"))
+            .prefetch_related("players")
             .first()
         )
         if game is None:
             raise GameException("Game not found")
         player_map = {player["username"]: player["state"] for player in players}
         with transaction.atomic():
-            for player in game.prefetched_players:
+            for player in game.players.all():
                 player.state = player_map[player.player.username]
                 player.save()
             game.state = GameStates.FINISHED

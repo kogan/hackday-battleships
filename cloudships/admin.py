@@ -12,6 +12,7 @@ from .models import BotServer, Game, GameConfig, GameException, GameMove, GamePl
 
 class PlayerInline(TabularInline):
     model = GamePlayer
+    extra = 0
 
 
 @admin.register(Game)

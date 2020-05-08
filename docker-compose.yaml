@@ -17,6 +17,7 @@ services:
         SECRET_KEY: a-secret-key
         PORT: 80
         DISPATCH_URL: http://dispatcher/
+        PYTHONUNBUFFERED: 1
     command: python manage.py runserver 0.0.0.0:80
     working_dir: /app/code
     volumes:

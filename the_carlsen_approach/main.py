@@ -144,6 +144,7 @@ class BoardState(object):
         self.session = session
         self.url = url
         self.game_id = game_id
+        self.board = [["   "] * config["board_size"] for _ in range(config["board_size"])]
         self.board_size = config["board_size"]
         self.board_state = {}
         for x in range(self.board_size):
@@ -160,9 +161,16 @@ class BoardState(object):
 
     def set_board_state(self, response, x, y):
         self.board_state[(x, y)] = response["result"]
+        if response["result"] == "MISS":
+            self.board[x][y] = " o "
+        else:
+            self.board[x][y] = " X "
+
         self.history.append({'coordinate': (x, y), 'result': response["result"]})
         if response["result"] == "SUNK":
             self.update_sunk_ship(x, y)
+
+        print_2d_array(self.board)
 
     def update_sunk_ship(self, x, y):
         size = 1

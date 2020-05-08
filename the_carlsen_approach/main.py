@@ -14,9 +14,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
-
-
 from flask import Flask, request, jsonify
+
 app = Flask(__name__)
 
 # Copied for your convenience
@@ -138,7 +137,6 @@ def phase_place(session, url, game_id, config):
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
 
-
 class BoardState(object):
     def init(self, session, url, game_id, config):
         self.config = config
@@ -153,6 +151,7 @@ class BoardState(object):
                 self.board_state[(x, y)] = None
         self.ships_alive = {x['length']: x['count'] for x in config["ship_config"]}
         self.history = []
+        self.hit_mode = None
 
     def make_move(self, coord):
         x, y = coord
@@ -174,14 +173,15 @@ class BoardState(object):
         print_2d_array(self.board)
 
     def in_bounds(self, coord):
-        x,y = coord
-        return x >= 0 and x < self.board_size and y >= 0 and y <self.board_size
+        x, y = coord
+        return x >= 0 and x < self.board_size and y >= 0 and y < self.board_size
 
     def surrounding_coords(self, coord):
         x, y = coord
-        return filter(self.in_bounds,[(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)])
+        return filter(self.in_bounds, [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)])
 
     def update_sunk_ship(self, x, y):
+        self.hit_mode = None
         size = 1
         c = 1
         while self.board_state.get((x + c, y)) == "HIT":
@@ -258,18 +258,49 @@ class BoardState(object):
         return all_coordinates
 
 
+    def direction(self,moves, first_hit_coord):
+        for move in moves:
+            if move["coordinate"] != first_hit_coord:
+                x_diff = move["coordinate"][0] - first_hit_coord[0]
+                if x_diff != 0:
+                    return OrientationHorizontal
+                return OrientationVertical
+        return None
+
+    def opposite_direction(self, direction):
+        if direction == OrientationHorizontal:
+            return OrientationVertical
+        return OrientationHorizontal
 
     def next_move(self):
         all_placements = self.enumerate_all_placements()
         if self.history and self.history[-1]["result"] == "HIT":
-            x = self.history[-1]["coordinate"][0]
-            y = self.history[-1]["coordinate"][1]
-            candidates = []
-            candidates.append((x, y + 1))
-            candidates.append((x + 1, y))
-            candidates.append((x, y - 1))
-            candidates.append((x - 1, y))
-            all_placements = filter(lambda coord: coord in candidates, all_placements)
+            prev_coord = self.history[-1]["coordinate"]
+            if self.hit_mode is None:
+                # activate hit mode
+                self.hit_mode = (prev_coord, len(self.history) - 1)
+                x, y = prev_coord
+                candidates = []
+                candidates.append((x, y + 1))
+                candidates.append((x + 1, y))
+                candidates.append((x, y - 1))
+                candidates.append((x - 1, y))
+                all_placements = filter(lambda coord: coord in candidates, all_placements)
+            else:
+                (first_hit_coord, first_hit_move_index) = self.hit_mode
+                hit_mode_moves = self.history[first_hit_move_index:]
+                hit_mode_moves_hit = filter(lambda x: x["result"] == "HIT", hit_mode_moves)
+                hit_mode_moves_miss = filter(lambda x: x["result"] == "MISS", hit_mode_moves)
+
+                direction = self.direction(hit_mode_moves_hit, first_hit_coord)
+                if direction is None:
+                    direction = self.direction(hit_mode_moves_miss, first_hit_coord)
+
+                if direction == OrientationVertical:
+                    all_placements = filter(lambda coord: coord[0] == first_hit_coord[0], all_placements)
+                else:
+                    all_placements = filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)
+
         return Counter(all_placements).most_common(1)[0][0]
 
 
@@ -281,9 +312,12 @@ def phase_attack(session, url, game_id, config):
     bs.init(session, url, game_id, config)
     next_move = bs.next_move()
     print(f"next_move={next_move}")
+    print(f"move_number={len(bs.history)}")
     while bs.make_move(next_move):
         next_move = bs.next_move()
+        print(f"hit_mode={bs.hit_mode}")
         print(f"next_move={next_move}")
+        print(f"move_number={len(bs.history)}")
 
 
 def wait_for_state(session, url, game_id, state):
@@ -316,9 +350,11 @@ def game():
     play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
     return jsonify(success=True)
 
+
 def run():
     log.info('run')
     app.run(host="0.0.0.0", port=int(sys.argv[1]))
+
 
 if __name__ == "__main__":
     run()

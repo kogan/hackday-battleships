@@ -59,7 +59,11 @@ class Board:
         tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
         return Board(tiles=tiles, size=size)
 
-    def random_ships(self, ship_config=None):
+
+class ShipPlacer:
+
+    @classmethod
+    def random_ships(ship_config=None):
         self.ships = []
         # place ships randomly on board
         # XXX: this will not detect if there are too many ships to fit on the board and so will run forever
@@ -73,17 +77,17 @@ class Board:
             for c in range(count):
                 orientation = random.choice(list(Orientation))
                 if orientation == Orientation.Vertical:
-                    x = random.randrange(0, self.size)
-                    y = random.randrange(0, self.size - length)
+                    x = random.randrange(0, size)
+                    y = random.randrange(0, size - length)
                 else:
-                    x = random.randrange(0, self.size - length)
-                    y = random.randrange(0, self.size)
+                    x = random.randrange(0, size - length)
+                    y = random.randrange(0, size)
 
                 # TODO: collision detection
                 new_ship = Ship(position=Point(x, y), length=length, orientation=orientation)
-                self.ships.append(new_ship)
+                ships.append(new_ship)
 
-        return self.ships
+        return ships
 
 
 class AttackResponse(enum.Enum):

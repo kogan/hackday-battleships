@@ -2,7 +2,6 @@ import itertools
 import operator
 import os
 import random
-import sys
 import time
 from collections import Counter
 from dataclasses import asdict, dataclass
@@ -111,21 +110,19 @@ def make_ship_placement(board_size: int, ships):
             continue
     if config is None:
         config = try_place(shuffle=False)
-    board = [["   "] * board_size for _ in range(board_size)]
+    board = [["  "] * board_size for _ in range(board_size)]
     for setup in config:
         for x, y in get_occupied_squares(setup):
-            board[x][y] = " O "
+            board[y][x] = "🚢"
     print_2d_array(board)
     return [asdict(cfg) for cfg in config]
 
 
-def print_2d_array(arr):
-    sys.stdout.write("\n")
-    for i, (x, y) in enumerate((_x, _y) for _x in range(len(arr)) for _y in range(len(arr[_x]))):
-        if i % len(arr) == 0:
-            sys.stdout.write("\n")
-        sys.stdout.write(arr[x][y])
-    sys.stdout.write("\n")
+def print_2d_array(arr: List[List[str]]):
+    print()
+    for row in arr:
+        print("".join(row))
+    print()
 
 
 async def phase_join(session, url, game_id):

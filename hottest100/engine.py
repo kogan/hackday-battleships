@@ -3,6 +3,7 @@ import random
 import typing as t
 from dataclasses import asdict, dataclass
 from collections import deque
+from pprint import pprint
 
 
 SHIP_CONFIG = [
@@ -97,10 +98,12 @@ class ShipPlacer:
                         position=Point(x, y), length=length, orientation=orientation
                     )
                     is_clash = self.clash(ships, new_ship)
-                    if is_clash:
-                        print("clash!")
+                    # if is_clash:
+                    #    print("clash!")
 
                 ships.append(new_ship)
+                # print(new_ship)
+                # self.ship_repr(size, ships)
 
         return ships
 
@@ -109,19 +112,27 @@ class ShipPlacer:
         if not ships:
             return False
 
-        all_ship_points = []
+        # create a bit list of all points that have a ship on them
+        excluded_points = []
         for ship in ships:
+            ship_exclusion_zone = []
             if ship.orientation == Orientation.Horizontal:
-                ship_points = [
-                    Point(ship.position.x + i, ship.position.y)
-                    for i in range(ship.length)
-                ]
+                for j in [-1, 0, 1]:
+                    ship_exclusion_zone.extend(
+                        [
+                            Point(ship.position.x + i, ship.position.y + j)
+                            for i in range(-1, ship.length + 1)
+                        ]
+                    )
             else:
-                ship_points = [
-                    Point(ship.position.x, ship.position.y + j)
-                    for j in range(ship.length)
-                ]
-            all_ship_points.extend(ship_points)
+                for i in [-1, 0, 1]:
+                    ship_exclusion_zone.extend(
+                        [
+                            Point(ship.position.x + i, ship.position.y + j)
+                            for j in range(-1, ship.length + 1)
+                        ]
+                    )
+            excluded_points.extend(ship_exclusion_zone)
 
         if new_ship.orientation == Orientation.Horizontal:
             new_ship_points = [
@@ -136,10 +147,27 @@ class ShipPlacer:
 
         # enumerate all existing ship points to see if there's overlap
         for p in new_ship_points:
-            if p in all_ship_points:
+            if p in excluded_points:
                 return True
 
         return False
+
+    def ship_repr(self, size, ships):
+        # dump out board representation for debugging
+        board = []
+        for y in range(size):
+            board.append([" "] * size)
+
+        for ship in ships:
+            for i in range(ship.length):
+                if ship.orientation == Orientation.Horizontal:
+                    board[ship.position.y][ship.position.x + i] = "S"
+                else:
+                    board[ship.position.y + i][ship.position.x] = "S"
+
+        print("|   | " + " | ".join(map(str, range(size))) + " |")
+        for i, row in enumerate(board):
+            print("| {} | ".format(i) + " | ".join(row) + " |")
 
 
 class AttackResponse(enum.Enum):

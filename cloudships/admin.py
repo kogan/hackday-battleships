@@ -1,17 +1,29 @@
 from django.conf.urls import url
 from django.contrib import admin
 from django import forms
+from django.contrib.admin import TabularInline
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
-from .models import BotServer, Game, GameConfig, GameMove, GamePlayer, GameSetup
+from .models import BotServer, Game, GameConfig, GameException, GameMove, GamePlayer, GameSetup
+
+
+class PlayerInline(TabularInline):
+    model = GamePlayer
 
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    pass
+    readonly_fields = ('loser_display',)
+    inlines = [PlayerInline]
+
+    def loser_display(self, obj: Game):
+        try:
+            return obj.loser
+        except GameException as e:
+            return str(e)
 
 
 @admin.register(GamePlayer)

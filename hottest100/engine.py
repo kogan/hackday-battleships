@@ -130,9 +130,6 @@ class ShipPlacer:
                 self.corner_ships,
             ]
         )
-
-        #print("strategy is: {}".format(strategy.__name__))
-
         return strategy(size, ship_config)
 
     def random_ships(self, size, ship_config=None) -> t.List[Ship]:
@@ -475,6 +472,7 @@ def attack(session, url, game_id, config):
         tile = engine.opponent_board.tiles[attack.x][attack.y]
         response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=attack.x, y=attack.y))
         response = response.json()
+        print("response", response)
         res = response["result"]
         if res == "MISS":
             tile.state = State.Empty
@@ -510,7 +508,11 @@ def get_ships(size, ship_config=None):
 
 def setup(session, url, game_id):
     config_url = urljoin(url, f"/api/game/{game_id}/")
-    config = session.get(config_url)
+    response = session.get(config_url)
+    config = response.json()
+    config = config["game"]
     size, ship_config = config["board_size"], config["ship_config"]
     ships = get_ships(size, ship_config=ship_config)
+    place_url = urljoin(url, f"/api/game/{game_id}/place/")
+    session.post(place_url, json=ships)
     return ships, config

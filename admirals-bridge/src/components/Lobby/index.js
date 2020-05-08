@@ -9,7 +9,9 @@ const MenuButton = styled.div`
   color: white;
   width: 50%;
   margin: 12px auto;
-
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
   &:hover {
     background-color: #40a692;
   }

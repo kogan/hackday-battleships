@@ -172,13 +172,15 @@ def phase_attack(session, url, game_id, config):
         if not ship_found:
             x, y = choose_next_coord_heat(board_state)
         else:
-            #x, y = choose_next_coord_random(board_state)
             x, y = hit_hunter(board_state, ship_hit)
         if x == -1:
             break
         response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
         response = response.json()
         turns += 1
+        if "result" not in response:
+            print("INVALID MOVE??", x, y, response)
+            continue
         if response["result"] == "MISS":
             board_state[y][x] = CoordinateState.MISS
         else:
@@ -213,50 +215,55 @@ def phase_attack(session, url, game_id, config):
 
 
 def hit_hunter(board_state, start_coords):
-
-    # local coord vars (try up first)
+    # try up
     tryX, tryY = start_coords
     tryY -= 1
-
-    # try up
-    if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
-        return tryY, tryX
-    elif board_state[tryY][tryX] == CoordinateState.HIT:
+    while tryY >= 0:
+        if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
+            return tryX, tryY
+        if board_state[tryY][tryX] in (CoordinateState.BLOCKED, CoordinateState.MISS):
+            # Cant go further, turn around
+            break
+        # was hit, continue
         tryY -= 1
-        return tryY, tryX
-    else:
-        tryX = start_coords.x
-        tryY = start_coords.y + 1
 
     # try down
-    if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
-        return tryY, tryX
-    elif board_state[tryY][tryX] == CoordinateState.HIT:
+    tryX, tryY = start_coords
+    tryY += 1
+    while tryY <= len(board_state) - 1:
+        if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
+            return tryX, tryY
+        if board_state[tryY][tryX] in (CoordinateState.BLOCKED, CoordinateState.MISS):
+            # Cant go further, turn around
+            break
+        # was hit, continue
         tryY += 1
-        return tryY, tryX
-    else:
-        tryX = start_coords.x - 1
-        tryY = start_coords.y
 
-    # try left
-    if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
-        return tryY, tryX
-    elif board_state[tryY][tryX] == CoordinateState.HIT:
+    # try up
+    tryX, tryY = start_coords
+    tryX -= 1
+    while tryX >= 0:
+        if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
+            return tryX, tryY
+        if board_state[tryY][tryX] in (CoordinateState.BLOCKED, CoordinateState.MISS):
+            # Cant go further, turn around
+            break
+        # was hit, continue
         tryX -= 1
-        return tryY, tryX
-    else:
-        tryX = start_coords.x + 1
-        tryY = start_coords.y
 
-    # try right
-    if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
-        return tryY, tryX
-    elif board_state[tryY][tryX] == CoordinateState.HIT:
+    # try down
+    tryX, tryY = start_coords
+    tryX += 1
+    while tryX <= len(board_state[0]) - 1:
+        if board_state[tryY][tryX] == CoordinateState.UNKNOWN:
+            return tryX, tryY
+        if board_state[tryY][tryX] in (CoordinateState.BLOCKED, CoordinateState.MISS):
+            # Cant go further, turn around
+            break
+        # was hit, continue
         tryX += 1
-        return tryY, tryX
-    else:
-        print('Boat moved!?')
-        return 0,0
+    print('Boat moved!?')
+    return -1, -1
 
 def choose_next_coord_heat(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
     for coord, _ in RUNNING_HEAT_MAP.most_common(20):

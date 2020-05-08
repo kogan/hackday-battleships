@@ -47,13 +47,13 @@ services:
       - django
 
   player2:
-    build: ./hottest100
+    build: ./example_client
     environment:
       GAME_TOKEN: ${GAME_TOKEN_P2}
       PORT: 80
       PYTHONUNBUFFERED: 1
     volumes:
-      - ./hottest100:/code
+      - ./example_client:/code
     links:
       - django
 
@@ -64,6 +64,16 @@ services:
       PORT: 80
     volumes:
       - ./hottest100:/code
+    links:
+      - django
+  oh_ship:
+    build: ./oh_ship!
+    environment:
+      GAME_TOKEN: ${GAME_TOKEN_OH_SHIP}
+      PORT: 80
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./oh_ship!:/code
     links:
       - django
 

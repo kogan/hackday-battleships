@@ -16,9 +16,10 @@ class PlayerInline(TabularInline):
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    list_display = ["id", "state", "loser_display", "winner_display"]
-    readonly_fields = ("loser_display", "winner_display")
+    list_display = ("created_at", "id", "state", "loser_display", "winner_display")
+    readonly_fields = ("loser_display", "winner_display", "created_at")
     inlines = [PlayerInline]
+    ordering = ('-created_at',)
 
     def loser_display(self, obj: Game):
         try:
@@ -59,11 +60,6 @@ class BotServerAdmin(admin.ModelAdmin):
     list_display = ["user", "server_address"]
 
 
-class StartGameForm(forms.Form):
-    player_1 = forms.ModelChoiceField(BotServer.objects.all())
-    player_2 = forms.ModelChoiceField(BotServer.objects.all())
-
-
 @admin.register(GameConfig)
 class GameConfigAdmin(admin.ModelAdmin):
     list_display = ["id", "board_size", "player_1", "player_2", "count", "ship_config"]
@@ -95,5 +91,3 @@ class GameConfigAdmin(admin.ModelAdmin):
                 name="start-game",
             ),
         ] + super().get_urls()
-
-    pass

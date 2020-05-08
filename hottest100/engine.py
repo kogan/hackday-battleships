@@ -20,6 +20,7 @@ class Point:
     y: int
 
 
+@dataclass
 class Tile:
     position: Point
     state: State
@@ -40,8 +41,8 @@ class Board:
 @dataclass
 class Engine:
 
-    def generate_board(self):
-        return Board()
+    def generate_board(self) -> Board:
+        return Board(tiles=[])
 
     def get_attack(self) -> Point:
         return Point(0, 0)

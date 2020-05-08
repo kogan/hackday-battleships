@@ -190,7 +190,7 @@ class TestCoordinator(Coordinator):
 
     def attack(self, point: Point) -> AttackResponse:
         self.moves += 1
-        if point in self.attacks:
+        if point in self.attacks or point.x >= engine.size or point.y >= engine.size:
             response = AttackResponse.Invalid
         else:
             self.attacks.add(point)

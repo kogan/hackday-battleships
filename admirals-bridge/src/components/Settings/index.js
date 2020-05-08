@@ -36,6 +36,7 @@ const TURN_OPTIONS = [1, 10, 100, 1000];
 const Settings = ({ selectPlayer, setTurns }) => {
   const { players, selectedPlayers, config } = React.useContext(StateContext);
 
+  console.log(`players => `, players)
   const handleSetTurns = (e) => {
     setTurns(e.target.value);
   };
@@ -46,7 +47,12 @@ const Settings = ({ selectPlayer, setTurns }) => {
       <SettingsContainer>
         <SettingsRow>
           <SettingsHeader>Player</SettingsHeader>
-          {players &&
+          
+          {!Array.isArray(players) ? (
+            <div>
+              {players ? players.detail : "Error loading players"}
+            </div>
+          ) : (
             players.map((player) => (
               <Button
                 key={player.name}
@@ -55,7 +61,7 @@ const Settings = ({ selectPlayer, setTurns }) => {
               >
                 {player.name}
               </Button>
-            ))}
+          )))}
         </SettingsRow>
         <SettingsRow>
           <SettingsHeader>Turns</SettingsHeader>

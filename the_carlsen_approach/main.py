@@ -130,11 +130,13 @@ def phase_place(session, url, game_id, config):
 
 class BoardState(object):
     def init(self, session, url, game_id, config):
-        self.session
-        self.url
-        self.game_id
+        self.config = config
+        self.session = session
+        self.url = url
+        self.game_id = game_id
+        self.board_size = config["board_size"]
         self.board_state = {}
-        self.ships_alive = config["ship_config"]
+        self.ships_alive = {x['length']: x['alive'] for x in config["ship_config"]}
 
     def make_move(self, x, y):
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
@@ -142,22 +144,48 @@ class BoardState(object):
         self.set_broard_state(response.json(), x, y)
 
     def set_broard_state(self, response,x,y):
-        if response["result"] == "MISS":
-            self.board_state[(x,y)] = False
-        else:
-            self.board_state[(x,y)] = True
+        self.board_state[(x,y)] = response["result"]
         if response["result"] == "SUNK":
-            #Find ships and remove them
-            # self.ships_alive = config["ship_config"]
-            pass
+            self.update_sunk_ship(x,y)
 
+    def update_sunk_ship(self, x,y):
+        size = 1
+        c = 1
+        while self.board_state.get([x+c,y] == "HIT"):
+            size +=1
+            self.board_state[[x+c,y] == "SUNK"]
+            c = c +1
 
+        c = 1
+        while self.board_state.get([x - c, y] == "HIT"):
+            size += 1
+            self.board_state[[x + c, y] == "SUNK"]
+            c = c + 1
+
+        c = 1
+        while self.board_state.get([x, y+c] == "HIT"):
+            size += 1
+            self.board_state[[x + c, y] == "SUNK"]
+            c = c + 1
+
+        c = 1
+        while self.board_state.get([x, y-c] == "HIT"):
+            size += 1
+            self.board_state[[x + c, y] == "SUNK"]
+            c = c + 1
+
+        self.ships_alive[size] = self.ships_alive[size] - 1
+        if self.ships_alive[size] == 0:
+            self.ships_alive.pop(size)
+        
 
 def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
     bs = BoardState(session, url, game_id, config)
+
+
 
 
 def wait_for_state(session, url, game_id, state):

@@ -272,7 +272,7 @@ class BoardState(object):
 
     def direction(self,moves, first_hit_coord):
         for move in moves:
-            if move["coordinate"] != first_hit_coord:
+            if move["coordinate"][0] != first_hit_coord[0] and move["coordinate"][1] != first_hit_coord[1]:
                 x_diff = move["coordinate"][0] - first_hit_coord[0]
                 if x_diff != 0:
                     return OrientationHorizontal
@@ -288,7 +288,7 @@ class BoardState(object):
         try:
             all_placements = self.enumerate_all_placements()
             print(f"unfiltered_move_count={len(all_placements)}")
-            if self.history and self.history[-1]["result"] == "HIT":
+            if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
                 prev_coord = self.history[-1]["coordinate"]
                 if self.hit_mode is None:
                     # activate hit mode
@@ -346,10 +346,10 @@ def phase_attack(session, url, game_id, config):
     print(f"next_move={next_move}")
     print(f"move_number={len(bs.history)}")
     while bs.make_move(next_move):
-        next_move = bs.next_move()
         print(f"hit_mode={bs.hit_mode}")
         print(f"next_move={next_move}")
         print(f"move_number={len(bs.history)}")
+        next_move = bs.next_move()
 
 
 def wait_for_state(session, url, game_id, state):

@@ -1,5 +1,5 @@
 from cloudships.dispatcher import verify_game_secret
-from cloudships.models import Game, GameConfig, GameException, GamePlayer, Orientation
+from cloudships.models import BotServer, Game, GameConfig, GameException, GamePlayer, Orientation
 from django.http import Http404, JsonResponse
 from rest_framework import serializers
 from rest_framework.authentication import TokenAuthentication
@@ -164,3 +164,15 @@ class GameConfigDetailView(APIView):
         cfg = self.get_object(pk)
         serializer = GameConfigDetailSerializer(cfg)
         return JsonResponse(dict(data=serializer.data))
+
+
+class PlayerSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, source="user.username")
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def players(request):
+    all_players = BotServer.objects.all()
+    return JsonResponse(PlayerSerializer(instance=all_players, many=True).data, safe=False)

@@ -9,6 +9,7 @@ from .views import (
     game_status,
     join_game,
     place_ships,
+    players,
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path("api/game/<uuid:game_id>/finish/", finish_game),
     path("api/games/", GameConfigListView.as_view()),
     path("api/games/<int:pk>/", GameConfigDetailView.as_view()),
+    path("api/player/", players),
 ]

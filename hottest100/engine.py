@@ -27,7 +27,7 @@ class Tile:
 
 
 @dataclass
-class DataShip:
+class Ship:
     position: Point
     length: int
     orientation: Orientation
@@ -40,12 +40,18 @@ class Board:
 
 @dataclass
 class Engine:
+    our_board: Board
+    opponent_board: Board
+    test_board: Board
+    size: int = 10
 
     def generate_board(self) -> Board:
-        return Board(tiles=[])
+        self.our_board = Board(tiles=[])
+        return self.our_board
 
     def get_attack(self) -> Point:
         return Point(0, 0)
 
     def test(self):
-        self.board = self.generate_board()
+        self.our_board = self.generate_board()
+        self.test_board = self.generate_board()

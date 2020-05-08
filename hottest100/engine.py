@@ -381,3 +381,12 @@ if __name__ == "__main__":
     worst = max(history)
     mean = statistics.mean(history)
     print(f"Games: {len(history)} [Best: {best} |Worst: {worst}|Mean: {mean}]")
+
+
+def attack():
+    pass
+    # loop and use requests to attack
+
+def get_ships():
+    pass
+    # return data that server requires for ship placement

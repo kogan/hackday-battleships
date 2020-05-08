@@ -46,7 +46,7 @@ const Settings = ({ selectPlayer, setTurns }) => {
       <SettingsContainer>
         <SettingsRow>
           <SettingsHeader>Player</SettingsHeader>
-          {players &&
+          {Array.isArray(players) &&
             players.map((player) => (
               <Button
                 key={player.name}

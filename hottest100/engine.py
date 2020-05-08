@@ -57,6 +57,7 @@ class AttackResponse(enum.Enum):
     Miss = "miss"
     Sunk = "sunk"
     Win = "win"
+    Invalid = "invalid"
 
 
 class Coordinator:
@@ -141,14 +142,20 @@ class Engine:
                 tile.state = State.Hit
             elif response is AttackResponse.Miss:
                 tile.state = State.Empty
+            elif response is AttackResponse.Invalid:
+                print(f"Uh Oh: we messed up with {attack}")
 
 
 class TestCoordinator(Coordinator):
     def __init__(self, engine: Engine):
         self.engine = engine
+        self.game_board = engine.generate_board()
+        self.attacks : t.Set[Point] = set()
+        self.moves = 0
 
     def attack(self, point: Point) -> AttackResponse:
-        response = AttackResponse.Win
+        self.moves += 1
+        response = AttackResponse.Hit if self.moves < 10 else AttackResponse.Win
         print(f"Attack: {point} | {response}")
         return response
 

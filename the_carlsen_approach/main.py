@@ -143,10 +143,11 @@ class BoardState(object):
         self.ships_alive = {x['length']: x['alive'] for x in config["ship_config"]}
         self.history = []
 
-    def make_move(self, x, y):
+    def make_move(self, coord):
+        x,y = coord
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
-
         self.set_board_state(response.json(), x, y)
+        return len(self.ships_alive.keys()) > 0
 
     def set_board_state(self, response, x, y):
         self.board_state[(x, y)] = response["result"]
@@ -235,14 +236,19 @@ class BoardState(object):
             candidates.append((x, y - 1))
             candidates.append((x - 1, y - 1))
             all_placements = filter(lambda coord: coord in candidates, all_placements)
-        return Counter(all_placements).most_common(1)[0]
+        return Counter(all_placements).most_common(1)[0][0]
 
 
 def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
-    bs = BoardState(session, url, game_id, config)
+    bs = BoardState()
+    bs.init(session, url, game_id, config)
+    next_move = bs.next_move()
+    while bs.make_move(next_move):
+        next_move = bs.next_move()
+        
 
 
 def wait_for_state(session, url, game_id, state):

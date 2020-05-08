@@ -45,13 +45,70 @@ Subjectively, the builders will collectively nominate the coolest AI for an extr
 For a visualisation of how the setup works, play around with [this](http://en.battleship-game.org/).
 
 ## Schedule
- - 9:00am: introduction
- - 9:15am: HACK
+ - 9:15am: introduction
+ - 9:30am: HACK
  - 12:30pm: lunch
  - 1:30pm: back to the grind
  - 4:30pm: begin battles
  - 5:00pm: discuss strategies
  - 5:30pm: Head ~~to the pub~~ back into self isolation
+
+## Architecture
+
+Each bot will use a subdirectory in this project.
+Each bot will need to expose an HTTP interface via a Dockerfile (see `example_client`).
+Wire up your bot to the `docker-compose` file, using `player1` as an example.
+
+
+## Dev setup
+
+start all the useful containers.
+
+`docker-compose up -d django db dispatcher`
+
+Run migrations for the first time.
+
+`./shortcuts.sh migrate`
+
+Create an admin user for yourself.
+
+`./shortcuts.sh createsuperuser`
+
+Log in to the admin: http://localhost:8645/admin/
+
+Create 2 additional users in the admin interface.
+
+Create Tokens for each of those users, and export them as ENV vars:
+
+```
+export GAME_TOKEN_P1=<token>
+export GAME_TOKEN_P2=<token>
+```
+
+Create a game config with the default configuration:
+boardsize: 10
+
+```
+[{"length":5, "count":1}, {"length":4, "count":1}, {"length":3, "count":2}, {"length":2, "count":1}]
+```
+
+Create BotServers for each of your player
+(use http://player1/ and http://player2/ respectively)
+
+Start up the example clients
+`docker-compose up -d player1 player2`
+
+Start the game via shell:
+
+```
+./shortcuts.sh shell
+cfg = GameConfig.objects.first()
+p1 = BotServer.objects.get(user__username='player1')
+p2 = BotServer.objects.get(user__username='player2')
+
+GameConfig.objects.start_game(cfg.id, p1, p2)
+```
+
 
 ## Engine API
 

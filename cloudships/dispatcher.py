@@ -19,7 +19,7 @@ def dispatch(callback, game: "Game", server_1: "BotServer", server_2: "BotServer
                 {"server_url": server_2.server_address, "username": server_2.user.username},
             ],
             "game_id": str(game.pk),
-            "callback_url": callback,
+            "callback_url": "http://django",
         },
     )
     response.raise_for_status()

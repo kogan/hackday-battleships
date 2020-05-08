@@ -16,7 +16,8 @@ class PlayerInline(TabularInline):
 
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
-    readonly_fields = ("loser_display",)
+    readonly_fields = ("loser_display", "created_at")
+    list_display = ("created_at", "state", "config", "loser_display")
     inlines = [PlayerInline]
 
     def loser_display(self, obj: Game):
@@ -79,5 +80,3 @@ class GameConfigAdmin(admin.ModelAdmin):
                 name="start-game",
             ),
         ] + super().get_urls()
-
-    pass

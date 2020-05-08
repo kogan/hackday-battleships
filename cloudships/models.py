@@ -84,6 +84,7 @@ class GameConfigManager(models.Manager):
 
 
 class GameConfig(models.Model):
+    name = models.CharField(max_length=255)
     board_size = models.IntegerField()
     ship_config = JSONField()
     player_1 = models.ForeignKey(
@@ -151,6 +152,7 @@ class Game(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     state = models.CharField(max_length=20, choices=States.choices)
     config = models.ForeignKey(GameConfig, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True, editable=False)
     objects = GameManager()
 
     @cached_property

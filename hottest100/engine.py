@@ -1,6 +1,7 @@
 import enum
 import random
 import statistics
+import time
 import typing as t
 from collections import deque
 from copy import deepcopy
@@ -124,12 +125,7 @@ class ShipPlacer:
 
     def random_strategy(self, size, ship_config=None):
         # randomly selelct a placement strategy
-        strategy = random.choice(
-            [
-                self.random_ships,
-                self.corner_ships,
-            ]
-        )
+        strategy = random.choice([self.random_ships, self.corner_ships])
         return strategy(size, ship_config)
 
     def random_ships(self, size, ship_config=None) -> t.List[Ship]:
@@ -178,11 +174,11 @@ class ShipPlacer:
         if corner == "UL":
             start_x, start_y = 0, 0
         elif corner == "UR":
-            start_x, start_y = size-1, 0
+            start_x, start_y = size - 1, 0
         elif corner == "DL":
-            start_x, start_y = 0, size-1
+            start_x, start_y = 0, size - 1
         else:  # corner == 'DR'
-            start_x, start_y = size-1, size-1
+            start_x, start_y = size - 1, size - 1
         # direction to move outwards
         x_inc = 1 if start_x == 0 else -1
         y_inc = 1 if start_y == 0 else -1
@@ -193,7 +189,7 @@ class ShipPlacer:
         ships_to_place = deepcopy(ship_config)
         random.shuffle(ships_to_place)
 
-        #print("start: {},{}".format(start_x, start_y))
+        # print("start: {},{}".format(start_x, start_y))
 
         ships = []
 
@@ -219,8 +215,8 @@ class ShipPlacer:
                         break
 
                 ships.append(new_ship)
-                #print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
-                #self.ship_repr(size, ships)
+                # print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
+                # self.ship_repr(size, ships)
 
         return ships
 
@@ -465,12 +461,14 @@ def attack(session, url, game_id, config):
     engine = Engine(size=size)
 
     ship_config = config["ship_config"]
-    total_opponent_tiles = sum(map(lambda s: s["length"]*s["count"], ship_config))
+    total_opponent_tiles = sum(map(lambda s: s["length"] * s["count"], ship_config))
 
     while total_opponent_tiles:
         attack = engine.get_attack()
         tile = engine.opponent_board.tiles[attack.x][attack.y]
-        response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=attack.x, y=attack.y))
+        response = session.post(
+            urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=attack.x, y=attack.y)
+        )
         response = response.json()
         print("response", response)
         res = response["result"]
@@ -498,9 +496,7 @@ def get_ships(size, ship_config=None):
                 x=ship.position.x,
                 y=ship.position.y,
                 length=ship.length,
-                orientation="HORIZONTAL"
-                if ship.orientation == Orientation.Horizontal
-                else "VERTICAL",
+                orientation=ship.orientation.value,
             )
         )
     return out
@@ -516,3 +512,12 @@ def setup(session, url, game_id):
     place_url = urljoin(url, f"/api/game/{game_id}/place/")
     session.post(place_url, json=ships)
     return ships, config
+
+
+def wait(session, url, game_id, state):
+    while True:
+        response = session.get(urljoin(url, f"/api/game/{game_id}/")).json()
+        print(f"Waiting:: {response=}")
+        if response["game"]["state"] == state:
+            break
+        time.sleep(2)

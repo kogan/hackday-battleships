@@ -192,7 +192,7 @@ class BoardState(object):
             if (y + ship_size) < self.config["board_size"]:
                 for step in range(ship_size):
                     coord = (x, y + step)
-                    if self.board_state[coord] in ['SUNK', 'MISS', 'N/A']:
+                    if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
                     up_coordinates.append(coord)
@@ -205,7 +205,7 @@ class BoardState(object):
             if (x + ship_size) < self.board_size:
                 for step in range(ship_size):
                     coord = (x + step, y)
-                    if self.board_state[coord] in ['SUNK', 'MISS', 'N/A']:
+                    if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
                     right_coordinates.append(coord)

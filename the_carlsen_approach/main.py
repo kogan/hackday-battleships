@@ -295,7 +295,7 @@ def game():
     body = request.json
     log.info('in route')
     play_game(body["url"], os.environ.get("GAME_TOKEN"), body["game_id"])
-    return jsonify()
+    return jsonify(success=True)
 
 def run():
     log.info('run')

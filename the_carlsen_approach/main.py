@@ -137,9 +137,7 @@ def phase_place(session, url, game_id, config):
     ships = make_ship_placement(config["board_size"], config["ship_config"])
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
-def surrounding_coords(coord):
-    x,y = coord
-    return [(x-1,y), (x+1,y),(x,y-1),(x,y+1)]
+
 
 class BoardState(object):
     def init(self, session, url, game_id, config):
@@ -175,6 +173,14 @@ class BoardState(object):
 
         print_2d_array(self.board)
 
+    def in_bounds(self, coord):
+        x,y = coord
+        return x >= 0 and x < self.board_size and y >= 0 and y <self.board_size
+
+    def surrounding_coords(self, coord):
+        x, y = coord
+        return filter(self.in_bounds,[(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)])
+
     def update_sunk_ship(self, x, y):
         size = 1
         c = 1
@@ -202,7 +208,7 @@ class BoardState(object):
             c += 1
 
         for coord in self.board_state:
-            is_sunk_in_surrrounding = any([self.board_state[x] == "SUNK" for x in surrounding_coords(coord)])
+            is_sunk_in_surrrounding = any([self.board_state[x] == "SUNK" for x in self.surrounding_coords(coord)])
             if self.board_state[coord] not in ["SUNK", "HIT"] and is_sunk_in_surrrounding:
                 self.board_state[coord] = "MISS"
 

@@ -222,11 +222,11 @@ class BoardState(object):
 
 
         self.ships_alive[size] = self.ships_alive[size] - 1
-        sys.stdout.write(str(size))
-        sys.stdout.write("\n")
+        print(f"sunk_ship_size={size}")
         if self.ships_alive[size] == 0:
             self.ships_alive.pop(size)
-            sys.stdout.write(str(self.ships_alive))
+
+        print(f"ships_alive={self.ships_alive}")
 
     def enumerate_ship_placements(self, ship_size):
         coordinates = []  # list of coordinates with duplicates expected
@@ -287,6 +287,7 @@ class BoardState(object):
     def next_move(self):
         try:
             all_placements = self.enumerate_all_placements()
+            print(f"unfiltered_move_count={len(all_placements)}")
             if self.history and self.history[-1]["result"] == "HIT":
                 prev_coord = self.history[-1]["coordinate"]
                 if self.hit_mode is None:
@@ -298,7 +299,6 @@ class BoardState(object):
                     candidates.append((x + 1, y))
                     candidates.append((x, y - 1))
                     candidates.append((x - 1, y))
-                    all_placements = filter(lambda coord: coord in candidates, all_placements)
                 else:
                     (first_hit_coord, first_hit_move_index) = self.hit_mode
                     hit_mode_moves = self.history[first_hit_move_index:]
@@ -310,13 +310,21 @@ class BoardState(object):
                         direction = self.direction(hit_mode_moves_miss, first_hit_coord)
 
                     if direction == OrientationVertical:
-                        all_placements = filter(lambda coord: coord[0] == first_hit_coord[0], all_placements)
+                        candidates = []
+                        for step in [-1,1]:
+                            for move in hit_mode_moves_hit:
+                                candidates.append((move["coordinate"][0], move["coordinate"][1]+step))
                     else:
-                        all_placements = [coord for coord in filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)]
-            if len(all_placements) == 0:
-                all_placements = self.enumerate_all_placements()
+                        candidates = []
+                        for step in [-1,1]:
+                            for move in hit_mode_moves_hit:
+                                candidates.append((move["coordinate"][0]+step, move["coordinate"][1]))
 
+                all_placements = [coord for coord in filter(lambda coord: coord in candidates, all_placements)]
+                if len(all_placements) == 0:
+                    all_placements = self.enumerate_all_placements()
             return Counter(all_placements).most_common(1)[0][0]
+
         except Exception:
             sys.stdout.write("EXCEPTION #############################")
             for k,v in self.board_state.items():

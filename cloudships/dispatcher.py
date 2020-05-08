@@ -7,7 +7,7 @@ if t.TYPE_CHECKING:
     from .models import BotServer, Game
 
 
-def dispatch(game: "Game", server_1: "BotServer", server_2: "BotServer"):
+def dispatch(callback, game: "Game", server_1: "BotServer", server_2: "BotServer"):
     response = requests.post(
         settings.DISPATCH_URL,
         json={
@@ -16,7 +16,7 @@ def dispatch(game: "Game", server_1: "BotServer", server_2: "BotServer"):
                 {"server_url": server_2.server_address, "username": server_2.user.username},
             ],
             "game_id": str(game.pk),
-            "callback_url": f"http://{settings.ALLOWED_HOSTS[0]}",  # todo: fix me!
+            "callback_url": callback,
         },
     )
     response.raise_for_status()

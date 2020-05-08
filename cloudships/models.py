@@ -82,9 +82,9 @@ class GameConfigManager(models.Manager):
             board_size=board_size, ship_config=[cfg.asdict() for cfg in ship_configs],
         )
 
-    def start_game(self, config_id, server_1: BotServer, server_2: BotServer):
+    def start_game(self, callback, config_id, server_1: BotServer, server_2: BotServer):
         game = Game.objects.create(state=GameStates.JOIN_PHASE, config_id=config_id)
-        dispatcher.dispatch(game, server_1, server_2)
+        dispatcher.dispatch(callback, game, server_1, server_2)
         return game
 
 
@@ -117,11 +117,7 @@ class GameManager(models.Manager):
         return game
 
     def finish_game(self, game_id, players):
-        game = (
-            Game.objects.filter(id=game_id)
-            .prefetch_related("players")
-            .first()
-        )
+        game = Game.objects.filter(id=game_id).prefetch_related("players").first()
         if game is None:
             raise GameException("Game not found")
         player_map = {player["username"]: player["state"] for player in players}

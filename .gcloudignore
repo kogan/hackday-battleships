@@ -2,4 +2,3 @@
 #!include:.gitignore
 example_client/
 dispatcher/
-node_modules/

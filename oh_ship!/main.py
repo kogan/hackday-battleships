@@ -348,7 +348,7 @@ def print_attack_board(state: List[List[CoordinateState]]):
         if p == CoordinateState.HIT:
             return "💥"
         if p == CoordinateState.MISS:
-            return ". "
+            return "🌊"
         if p == CoordinateState.BLOCKED:
             return "░░"
         return "  "

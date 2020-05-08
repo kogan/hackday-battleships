@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 
 
 class Orientation(enums.Enum):
-    Veritcal = "vertical"
+    Vertical = "vertical"
     Horizontal = "horizontal"
 
 

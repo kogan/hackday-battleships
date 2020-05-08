@@ -1,6 +1,6 @@
 import React from "react";
 
-const TOKEN = "afd8914c0f34d84e5f59bbd780e1b1ae78668ea7";
+import {ADMIN_API_TOKEN as TOKEN} from "./api.js"
 
 const headers = new Headers({
   Authorization: `Token ${TOKEN}`,

@@ -58,6 +58,7 @@ class Ship:
     length: int
     orientation: Orientation
     health: Health
+    original_points: t.Set[Point]
     points_remaining: t.Set[Point]
 
     def __init__(self, position: Point, length: int, orientation: Orientation):
@@ -66,12 +67,14 @@ class Ship:
         self.orientation = orientation
         self.health = Health.Alive
         self.points_remaining = set()
+        self.original_points = set()
         self._init_tiles()
 
     def _init_tiles(self):
         position = self.position
         for _ in range(self.length):
             self.points_remaining.add(position)
+            self.original_points.add(position)
             position = position.next_point(self.orientation)
 
     def hit(self, point: Point) -> bool:
@@ -82,6 +85,21 @@ class Ship:
             self.health = Health.Dead
         return True
 
+    def __repr__(self):
+        health_indicator = "❌" if self.health is Health.Dead else "✅"
+        hit = "💥"
+        ok = "🚢"
+        points = []
+        for point in self.original_points:
+            if point in self.points_remaining:
+                points.append(ok)
+            else:
+                points.append(hit)
+        ship_str = "".join(points)
+        return f"Ship<{health_indicator}: {ship_str}>"
+
+    def __hash__(self):
+        return id(self)
 
 @dataclass
 class Board:
@@ -313,7 +331,8 @@ class TestCoordinator(Coordinator):
         self.attack_map = attack_map
 
     def print_attack(self, point: Point, response: AttackResponse):
-        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {list(self.attack_map.keys())}")
+        ships = set(self.attack_map.values())
+        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
 
     def attack(self, point: Point) -> AttackResponse:
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:

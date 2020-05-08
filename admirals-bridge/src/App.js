@@ -11,28 +11,29 @@ import "./App.css";
 import { useFetch } from "./hooks";
 import { URLMAP } from "./api";
 
-function Navigator() {
-  const NavbarUl = styled.ul`
-    list-style-type: none;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    background-color: #333;
+const NavbarUl = styled.ul`
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #333;
 
-    li {
-      float: left;
-      a {
-        display: block;
-        color: white;
-        text-align: center;
-        padding: 14px 16px;
-        text-decoration: none;
-      }
-      a:hover {
-        background-color: #111;
-      }
+  li {
+    float: left;
+    a {
+      display: block;
+      color: white;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
     }
-  `;
+    a:hover {
+      background-color: #111;
+    }
+  }
+`;
+
+function Navigator() {
   return (
     <NavbarUl>
       <li>

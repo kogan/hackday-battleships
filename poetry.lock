@@ -86,6 +86,17 @@ bcrypt = ["bcrypt"]
 
 [[package]]
 category = "main"
+description = "django-cors-headers is a Django application for handling the server headers required for Cross-Origin Resource Sharing (CORS)."
+name = "django-cors-headers"
+optional = false
+python-versions = ">=3.5"
+version = "3.2.1"
+
+[package.dependencies]
+Django = ">=1.11"
+
+[[package]]
+category = "main"
 description = "Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application."
 name = "django-environ"
 optional = false
@@ -130,10 +141,6 @@ pytz = "*"
 requests = ">=2.18.0,<3.0.0dev"
 setuptools = ">=34.0.0"
 six = ">=1.10.0"
-
-[package.dependencies.grpcio]
-optional = true
-version = ">=1.8.2,<2.0dev"
 
 [package.extras]
 grpc = ["grpcio (>=1.8.2,<2.0dev)"]
@@ -209,10 +216,6 @@ version = "1.51.0"
 
 [package.dependencies]
 protobuf = ">=3.6.0"
-
-[package.dependencies.grpcio]
-optional = true
-version = ">=1.0.0"
 
 [package.extras]
 grpc = ["grpcio (>=1.0.0)"]
@@ -518,7 +521,7 @@ version = "5.0.1"
 brotli = ["brotli"]
 
 [metadata]
-content-hash = "1eda5d7546ccad3704b80fc8845f56122ddad48285ec79946cbe3dab601721e4"
+content-hash = "52a09d9c9a313c16fad4d5dd22b3d5f0675504bb11cb9b31a3a22f81bc859afd"
 python-versions = "^3.8"
 
 [metadata.files]
@@ -557,6 +560,10 @@ decorator = [
 django = [
     {file = "Django-3.0.4-py3-none-any.whl", hash = "sha256:89e451bfbb815280b137e33e454ddd56481fdaa6334054e6e031041ee1eda360"},
     {file = "Django-3.0.4.tar.gz", hash = "sha256:50b781f6cbeb98f673aa76ed8e572a019a45e52bdd4ad09001072dfd91ab07c8"},
+]
+django-cors-headers = [
+    {file = "django-cors-headers-3.2.1.tar.gz", hash = "sha256:a5960addecc04527ab26617e51b8ed42f0adab4594b24bb0f3c33e2bd3857c3f"},
+    {file = "django_cors_headers-3.2.1-py3-none-any.whl", hash = "sha256:a785b5f446f6635810776d9f5f5d23e6a2a2f728ea982648370afaf0dfdf2627"},
 ]
 django-environ = [
     {file = "django-environ-0.4.5.tar.gz", hash = "sha256:6c9d87660142608f63ec7d5ce5564c49b603ea8ff25da595fd6098f6dc82afde"},

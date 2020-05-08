@@ -67,9 +67,11 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "cloudships",
     "django_extensions",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -131,3 +133,5 @@ REST_FRAMEWORK = {
 }
 
 DISPATCH_URL = env("DISPATCH_URL", default="http:///")
+
+CORS_ORIGIN_ALLOW_ALL = True

@@ -1,5 +1,5 @@
 import React from "react";
-import styled from 'styled-components'
+import styled from "styled-components";
 import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
 import LobbyContainer from "./container/LobbyContainer";
 import Lobby from "./components/Lobby";
@@ -28,7 +28,7 @@ function Navigator() {
         background-color: #111;
       }
     }
-  `
+  `;
   return (
     <NavbarUl>
       <li>
@@ -41,29 +41,33 @@ function Navigator() {
         <Link to="/results/">Results</Link>
       </li>
     </NavbarUl>
-  )
+  );
 }
+
+const StateContext = React.createContext({});
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Navigator />
-        <LobbyContainer>
-          <Switch>
-            <Route exact path="/">
-              <Lobby />
-            </Route>
-            <Route exact path="/match/">
-              <MatchMaker />
-            </Route>
-            <Route exact path="/results/">
-              <Results />
-            </Route>
-          </Switch>
-        </LobbyContainer>
-      </div>
-    </Router>
+    <StateContext.Provider value={{}}>
+      <Router>
+        <div className="App">
+          <Navigator />
+          <LobbyContainer>
+            <Switch>
+              <Route exact path="/">
+                <Lobby />
+              </Route>
+              <Route exact path="/match/">
+                <MatchMaker />
+              </Route>
+              <Route exact path="/results/">
+                <Results />
+              </Route>
+            </Switch>
+          </LobbyContainer>
+        </div>
+      </Router>
+    </StateContext.Provider>
   );
 }
 

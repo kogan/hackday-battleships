@@ -155,6 +155,7 @@ def phase_attack(session, url, game_id, config):
             board_state[y][x] = CoordinateState.MISS
         else:
             board_state[y][x] = CoordinateState.HIT
+            mark_hit(board_state, x, y)
             num_hit += 1
             print_attack_board(board_state)
         print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
@@ -183,6 +184,22 @@ def choose_next_coord_seek(board_state: List[List[CoordinateState]]) -> Tuple[in
             return 0, 0
 
 
+def mark_hit(board_state: List[List[CoordinateState]], x: int, y: int):
+    # When we get a hit, the diagonal locations cannot be occupied
+    if x > 1 and y > 1:
+        if board_state[y-1][x-1] == CoordinateState.UNKNOWN:
+            board_state[y-1][x-1] = CoordinateState.BLOCKED
+    if x > 1 and y < len(board_state):
+        if board_state[y+1][x-1] == CoordinateState.UNKNOWN:
+            board_state[y+1][x-1] = CoordinateState.BLOCKED
+    if x < len(board_state[0]) and y > 1:
+        if board_state[y-1][x+1] == CoordinateState.UNKNOWN:
+            board_state[y-1][x+1] = CoordinateState.BLOCKED
+    if x < len(board_state[0]) and y < len(board_state):
+        if board_state[y+1][x+1] == CoordinateState.UNKNOWN:
+            board_state[y+1][x+1] = CoordinateState.BLOCKED
+
+
 def print_attack_board(state: List[List[CoordinateState]]):
     print()
 
@@ -190,12 +207,15 @@ def print_attack_board(state: List[List[CoordinateState]]):
         if p == CoordinateState.HIT:
             return "X"
         if p == CoordinateState.MISS:
+            return "o"
+        if p == CoordinateState.BLOCKED:
             return "."
         return " "
     for row in state:
         print(" ".join(to_str(p) for p in row))
 
     print("\n")
+
 
 def wait_for_state(session, url, game_id, state):
     while True:

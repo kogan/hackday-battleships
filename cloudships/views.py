@@ -1,4 +1,4 @@
-from cloudships.models import Game, GameException, GamePlayer, Orientation
+from cloudships.models import BotServer, Game, GameException, GamePlayer, Orientation
 from django.http import Http404, JsonResponse
 from rest_framework import serializers
 from rest_framework.authentication import TokenAuthentication
@@ -64,6 +64,18 @@ class FinishedPlayerSerializer(serializers.Serializer):
 
 class FinishGameSerializer(serializers.Serializer):
     players = FinishedPlayerSerializer(many=True)
+
+
+class PlayerSerializer(serializers.Serializer):
+    name = serializers.CharField(required=True, source="user.username")
+
+
+@api_view(["GET"])
+@authentication_classes([TokenAuthentication])
+@permission_classes([IsAuthenticated])
+def players(request):
+    players = BotServer.objects.all()
+    return JsonResponse(PlayerSerializer(instance=players, many=True).data, safe=False)
 
 
 @api_view(["POST"])

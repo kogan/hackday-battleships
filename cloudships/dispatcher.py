@@ -8,6 +8,9 @@ if t.TYPE_CHECKING:
 
 
 def dispatch(callback, game: "Game", server_1: "BotServer", server_2: "BotServer"):
+    if settings.DEBUG:
+        # HACK - internal ports require internal thinking
+        callback = "http://django"
     response = requests.post(
         settings.DISPATCH_URL,
         json={

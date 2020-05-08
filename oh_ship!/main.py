@@ -6,7 +6,9 @@ import random
 import sys
 import time
 from dataclasses import asdict, dataclass
+from enum import Enum
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from typing import List, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -22,6 +24,13 @@ class DataShip(object):
     y: int
     length: int
     orientation: str
+
+
+class CoordinateState(Enum):
+    UNKNOWN = 0
+    MISS = 1
+    HIT = 2
+    BLOCKED = 3  # Cant possibly contain a ship
 
 
 def get_squares(start_x, start_y, length, orientation):
@@ -132,24 +141,61 @@ def phase_attack(session, url, game_id, config):
     """
     Attack a random coordinate that hasn't been attacked before.
     """
-    coords = [(x, y) for x in range(config["board_size"]) for y in range(config["board_size"])]
-    board = [["   "] * config["board_size"] for _ in range(config["board_size"])]
-    random.shuffle(coords)
+    board_size = config["board_size"]
+    board_state = [[CoordinateState.UNKNOWN for _ in range(board_size)] for _ in range(board_size)]
     expected_hits = sum(cfg["count"] * cfg["length"] for cfg in config["ship_config"])
     num_hit = 0
-    for x, y in coords:
+    turns = 0
+    while num_hit < expected_hits:
+        x, y = choose_next_coord_seek(board_state)
         response = session.post(urljoin(url, f"/api/game/{game_id}/attack/"), json=dict(x=x, y=y))
         response = response.json()
+        turns += 1
         if response["result"] == "MISS":
-            board[x][y] = " o "
+            board_state[y][x] = CoordinateState.MISS
         else:
+            board_state[y][x] = CoordinateState.HIT
             num_hit += 1
-            board[x][y] = " X "
-        if num_hit >= expected_hits:
-            break
+            print_attack_board(board_state)
+        print("Turn", turns, (x, y), response["result"], "Remaining:", expected_hits - num_hit)
 
-    print_2d_array(board)
+    print("!!!!!!!! GOT THEM ALL !!!!!!!!!!!!")
+    print_attack_board(board_state)
+    print("Num turns:", turns)
+    print("Score:", turns - num_hit)
 
+
+def choose_next_coord_seek(board_state: List[List[CoordinateState]]) -> Tuple[int, int]:
+    tries = 0
+    while True:
+        tries += 1
+        x = random.randint(0, len(board_state[0]) - 1)
+        y = random.randint(0, len(board_state) - 1)
+        if board_state[y][x] == CoordinateState.UNKNOWN:
+            return x, y
+        if tries > 10:
+            print("Warn: More than 10 tries.")
+            for y, row in enumerate(board_state):
+                for x, state in enumerate(row):
+                    if state == CoordinateState.UNKNOWN:
+                        return x, y
+            print("Exhausted all coords?!")
+            return 0, 0
+
+
+def print_attack_board(state: List[List[CoordinateState]]):
+    print()
+
+    def to_str(p: CoordinateState):
+        if p == CoordinateState.HIT:
+            return "X"
+        if p == CoordinateState.MISS:
+            return "."
+        return " "
+    for row in state:
+        print(" ".join(to_str(p) for p in row))
+
+    print("\n")
 
 def wait_for_state(session, url, game_id, state):
     while True:

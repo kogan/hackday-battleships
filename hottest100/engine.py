@@ -131,7 +131,7 @@ class ShipPlacer:
             ]
         )
 
-        print("strategy is: {}".format(strategy.__name__))
+        #print("strategy is: {}".format(strategy.__name__))
 
         return strategy(size, ship_config)
 
@@ -196,7 +196,7 @@ class ShipPlacer:
         ships_to_place = deepcopy(ship_config)
         random.shuffle(ships_to_place)
 
-        print("start: {},{}".format(start_x, start_y))
+        #print("start: {},{}".format(start_x, start_y))
 
         ships = []
 
@@ -222,8 +222,8 @@ class ShipPlacer:
                         break
 
                 ships.append(new_ship)
-                print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
-                self.ship_repr(size, ships)
+                #print("x,y: {},{} len: {}, {}".format(new_ship.position.x, new_ship.position.y, new_ship.length, new_ship.orientation))
+                #self.ship_repr(size, ships)
 
         return ships
 

@@ -1,4 +1,5 @@
 import enum
+from copy import deepcopy
 import random
 import statistics
 import typing as t
@@ -123,6 +124,19 @@ class ShipPlacer:
     >>> placer.random_ships(size=10)
     """
 
+    def random_strategy(self, size, ship_config=None):
+        # randomly selelct a placement strategy
+        strategy = random.choice([
+            self.random_ships,
+            #self.corner_ships,
+        ])
+
+        print("strategy is: {}".format(strategy.__name__))
+
+        return strategy(size, ship_config)
+
+
+
     def random_ships(self, size, ship_config=None) -> t.List[Ship]:
         ships : t.List[Ship] = []
         # place ships randomly on board
@@ -149,7 +163,7 @@ class ShipPlacer:
                     new_ship = Ship(
                         position=Point(x, y), length=length, orientation=orientation
                     )
-                    is_clash = self.clash(ships, new_ship)
+                    is_clash = self.clash(size, ships, new_ship)
                     # if is_clash:
                     #    print("clash!")
 
@@ -159,13 +173,81 @@ class ShipPlacer:
 
         return ships
 
-    def clash(self, ships, new_ship):
+    def corner_ships(self, size, ship_config=None):
+        # try placing ships as quickly as possible from one corner
+
+        if ship_config is None:
+            ship_config = SHIP_CONFIG
+
+        # pick a random corner
+        corner = random.choice(['UL', 'UR', 'DL', 'DR'])
+
+        if corner == 'UL':
+            start_x, start_y = 0, 0
+        elif corner == 'UR':
+            start_x, start_y = size, 0
+        elif corner == 'DL':
+            start_x, start_y = 0, size
+        else:  # corner == 'DR'
+            start_x, start_y = size, size
+        # direction to move outwards
+        x_inc = 1 if start_x == 0 else -1
+        y_inc = 1 if start_y == 0 else -1
+        # end positions
+        end_x = size if start_x == 0 else 0
+        end_y = size if start_y == 0 else 0
+
+        ships_to_place= deepcopy(ship_config)
+        random.shuffle(ships_to_place)
+        
+        ships = []
+
+        for ship_type in ships_to_place:
+
+            count = ship_type["count"]
+            length = ship_type["length"]
+
+            for c in range(count):
+                orientation = random.choice(list(Orientation))
+
+                i, j = start_x, start_y
+                is_clash = True
+                for i in range(start_x, end_x, x_inc):
+                    for j in range(start_y, end_y, y_inc):
+                        new_ship = Ship(
+                            position=Point(i, j), length=length, orientation=orientation
+                        )
+                        is_clash = self.clash(size, ships, new_ship)
+                        if not is_clash:
+                            break
+                    if not is_clash:
+                        break
+
+                ships.append(new_ship)
+
+        return ships
+
+
+    def clash(self, size, ships, new_ship):
         # Detect if current placement clashes with existing ships
         if not ships:
             return False
 
         # create a bit list of all points that have a ship on them
         excluded_points = []
+
+        # out of bounds is a clash too
+        for z in range(size):
+            # left edge
+            excluded_points.append(Point(-1, z))
+            # top edge
+            excluded_points.append(Point(z, -1))
+            # right edge
+            excluded_points.append(Point(size, z))
+            # bottom edge
+            excluded_points.append(Point(z, size))
+
+
         for ship in ships:
             ship_exclusion_zone = []
             if ship.orientation == Orientation.Horizontal:

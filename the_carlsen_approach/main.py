@@ -312,7 +312,9 @@ class BoardState(object):
                     if direction == OrientationVertical:
                         all_placements = filter(lambda coord: coord[0] == first_hit_coord[0], all_placements)
                     else:
-                        all_placements = filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)
+                        all_placements = [coord for coord in filter(lambda coord: coord[1] == first_hit_coord[1], all_placements)]
+            if len(all_placements) == 0:
+                all_placements = self.enumerate_all_placements()
 
             return Counter(all_placements).most_common(1)[0][0]
         except Exception:

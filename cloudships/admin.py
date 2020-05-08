@@ -19,6 +19,7 @@ class GameAdmin(admin.ModelAdmin):
     readonly_fields = ("loser_display", "created_at")
     list_display = ("created_at", "state", "config", "loser_display")
     inlines = [PlayerInline]
+    ordering = ('-created_at',)
 
     def loser_display(self, obj: Game):
         try:

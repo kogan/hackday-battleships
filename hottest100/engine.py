@@ -1,10 +1,9 @@
 import enum
 import random
 import typing as t
-from dataclasses import asdict, dataclass
 from collections import deque
+from dataclasses import asdict, dataclass
 from pprint import pprint
-
 
 SHIP_CONFIG = [
     {"count": 1, "length": 5},
@@ -25,6 +24,11 @@ class State(enum.Enum):
     Empty = "O"
 
 
+class Health(enum.Enum):
+    Alive = 0
+    Dead = 1
+
+
 @dataclass(frozen=True)
 class Point:
     x: int
@@ -32,6 +36,11 @@ class Point:
 
     def __repr__(self):
         return f"({self.x},{self.y})"
+
+    def next_point(self, orientation: Orientation):
+        if orientation is Orientation.Horizontal:
+            return Point(self.x + 1, self.y)
+        return Point(self.x, self.y + 1)
 
 
 @dataclass
@@ -48,6 +57,30 @@ class Ship:
     position: Point
     length: int
     orientation: Orientation
+    health: Health
+    points_remaining: t.Set[Point]
+
+    def __init__(self, position: Point, length: int, orientation: Orientation):
+        self.position = position
+        self.length = length
+        self.orientation = orientation
+        self.health = Health.Alive
+        self.points_remaining = set()
+        self._init_tiles()
+
+    def _init_tiles(self):
+        position = self.position
+        for _ in range(self.length):
+            self.points_remaining.add(position)
+            position = position.next_point(self.orientation)
+
+    def hit(self, point: Point) -> bool:
+        if point not in self.points_remaining:
+            return False
+        self.points_remaining.remove(point)
+        if not self.points_remaining:
+            self.health = Health.Dead
+        return True
 
 
 @dataclass
@@ -71,8 +104,8 @@ class ShipPlacer:
     >>> placer.random_ships(size=10)
     """
 
-    def random_ships(self, size, ship_config=None):
-        ships = []
+    def random_ships(self, size, ship_config=None) -> t.List[Ship]:
+        ships : t.List[Ship] = []
         # place ships randomly on board
         # XXX: this will not detect if there are too many ships to fit on the board and so will run forever
         if ship_config is None:
@@ -176,6 +209,7 @@ class AttackResponse(enum.Enum):
     Sunk = "sunk"
     Win = "win"
     Invalid = "invalid"
+    DNF = "dnf"
 
 
 class Coordinator:
@@ -269,10 +303,6 @@ class Engine:
         else:
             return self._attack_get_random_disparate_point_with_state_unknown()
 
-    def test(self):
-        self.our_board = self.generate_board()
-        self.test_board = self.generate_board()
-
     def play(self, coordinator: Coordinator):
         response = AttackResponse.Miss
         while response != AttackResponse.Win:
@@ -299,19 +329,41 @@ class TestCoordinator(Coordinator):
         self.attacks: t.Set[Point] = set()
         self.moves = 0
         self.max_moves = max_moves
+        placer = ShipPlacer()
+        self.ships = placer.random_ships(size=engine.size)
+        attack_map : t.Dict[Point, Ship] = {}
+        for ship in self.ships:
+            for point in ship.points_remaining:
+                attack_map[point] = ship
+        self.attack_map = attack_map
+
+    def print_attack(self, point: Point, response: AttackResponse):
+        print(f"Attack: {point} | {response}")
 
     def attack(self, point: Point) -> AttackResponse:
-        self.moves += 1
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
             response = AttackResponse.Invalid
+            self.print_attack(point, response)
+            return response
+
+        # TODO, moves calculation means we need to inc moves for the first hit,
+        # but not for a free hit.
+
+        self.attacks.add(point)
+        ship = self.attack_map.get(point)
+        if not ship:
+            self.moves += 1
+            response = AttackResponse.Miss
+            self.print_attack(point, response)
+            return response
+
+        # Hit!
+        ship.hit(point)
+        if ship.health is Health.Dead:
+            response = AttackResponse.Sunk
         else:
-            self.attacks.add(point)
-            response = (
-                AttackResponse.Hit
-                if self.moves < self.max_moves
-                else AttackResponse.Win
-            )
-        print(f"Attack: {point} | {response}")
+            response = AttackResponse.Hit
+        self.print_attack(point, response)
         return response
 
     def set_placement(self, board: Board) -> bool:

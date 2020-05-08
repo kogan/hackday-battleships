@@ -82,26 +82,43 @@ class GameConfigManager(models.Manager):
             board_size=board_size, ship_config=[cfg.asdict() for cfg in ship_configs],
         )
 
-    def start_game(self, callback, config_id, server_1: BotServer, server_2: BotServer):
-        game = Game.objects.create(state=GameStates.SETUP_PHASE, config_id=config_id)
-        GamePlayer.objects.bulk_create(
-            [
-                GamePlayer(game=game, player=server_1.user),
-                GamePlayer(game=game, player=server_2.user),
-            ]
-        )
-        dispatcher.dispatch(callback, game, server_1, server_2)
-        return game
-
 
 class GameConfig(models.Model):
     board_size = models.IntegerField()
     ship_config = JSONField()
+    player_1 = models.ForeignKey(
+        "BotServer", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    player_2 = models.ForeignKey(
+        "BotServer", on_delete=models.SET_NULL, null=True, related_name="+"
+    )
+    count = models.IntegerField(default=10)
     objects = GameConfigManager()
 
     @property
     def ships(self) -> t.List[ShipConfig]:
         return [ShipConfig(**cfg) for cfg in self.ship_config]
+
+    def __str__(self):
+        return f"({self.pk}) {self.player_1} vs {self.player_2}"
+
+    def create_game(self, callback_url):
+        game = Game.objects.create(state=GameStates.SETUP_PHASE, config=self)
+        GamePlayer.objects.bulk_create(
+            [
+                GamePlayer(game=game, player=self.player_1.user),
+                GamePlayer(game=game, player=self.player_2.user),
+            ]
+        )
+        dispatcher.dispatch(callback_url, game, self.player_1, self.player_2)
+        return game
+
+    def create_all_games(self, callback_url):
+        for _ in range(self.count):
+            self.create_game(callback_url)
+
+    def game_count(self):
+        return self.game_set.all().count()
 
 
 class GameManager(models.Manager):
@@ -377,3 +394,6 @@ class GameMove(models.Model):
     player = models.ForeignKey(GamePlayer, on_delete=models.CASCADE, related_name="moves")
     x = models.IntegerField()
     y = models.IntegerField()
+
+    def __str__(self):
+        return f"({self.x}, {self.y}) for {self.player}"

@@ -17,7 +17,7 @@ class PlayerInline(TabularInline):
 @admin.register(Game)
 class GameAdmin(admin.ModelAdmin):
     list_display = ("created_at", "id", "state", "loser_display", "winner_display")
-    readonly_fields = ("loser_display", "winner_display", "created_at")
+    readonly_fields = ("loser_display", "winner_display", "created_at", "scores")
     inlines = [PlayerInline]
     ordering = ('-created_at',)
 

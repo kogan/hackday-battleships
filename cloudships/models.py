@@ -245,6 +245,12 @@ class Game(models.Model):
             return None
         return self.players.exclude(id=loser.id).get()
 
+    def scores(self):
+        return " vs ".join(
+            str(p.moves.count())
+            for p in self.players.all()
+        )
+
 
 class GamePlayerQuerySet(models.QuerySet):
     def find_game(self, game_id: uuid.UUID, player: User):

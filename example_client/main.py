@@ -129,34 +129,49 @@ def phase_place(session, url, game_id, config):
     session.post(urljoin(url, f"/api/game/{game_id}/place/"), json=ships)
 
 
-def enumerate_ships(board_state, ship_size, board_size):
+def enumerate_ships(board_state, ship_size):
     coordinates = []  # list of coordinates with duplicates
-    for x, y in board_state:
-        # up
-        if (y + ship_size) < board_size:
+    for x, y in board_state.board_state:
+        up_coordinates = []
+        valid_placement = True
+        if (y + ship_size) < board_state.board_size:
             for step in range(ship_size):
-                coordinates.append((x, y + step))
+                coord = (x, y + step)
+                if board_state[coord] in ['SUNK', 'MISS']:
+                    valid_placement = False
+                    break
+                up_coordinates.append(coord)
 
-        # right
-        if (x + ship_size) < board_size:
+        if valid_placement:
+            coordinates.extend(up_coordinates)
+
+        right_coordinates = []
+        valid_placement = True
+        if (y + ship_size) < board_state.board_size:
             for step in range(ship_size):
-                coordinates.append((x + step, y))
+                coord = (x + step, y)
+                if board_state[coord] in ['SUNK', 'MISS']:
+                    valid_placement = False
+                    break
+                right_coordinates.append(coord)
+
+        if valid_placement:
+            coordinates.extend(right_coordinates)
 
     return coordinates
 
 
-def enumerate_board(board):
-    board_state = board.state
-    board_size = board.size
-    ships = board.ships
+def enumerate_board(board_state):
     all_coordinates = []
-    for ship in ships:
-        all_coordinates += enumerate_ships(board_state,ship.size, board_size)
+    for length, count in board_state.ships_alive.items():
+        ship_coordinates = enumerate_ships(board_state, length)
+        for _ in count:
+            all_coordinates += ship_coordinates
     return Counter(all_coordinates)
 
 
-
-
+def next_move(board_state):
+    return enumerate_board(board_state).most_common(1)[0]
 
 
 def phase_attack(session, url, game_id, config):

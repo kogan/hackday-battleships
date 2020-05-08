@@ -140,31 +140,6 @@ Attacks are asynchronous. You won't see what your opponent plays until after the
 
 ### Endpoints
 
-#### Create a game
-`POST /api/game/create/`
-
-Request
-
-```
-{
-  board_size: Integer (optional, default=10)
-  ship_config: [
-    {
-      length: Integer (required)
-      count: Integer (required)
-    }
-  ] (required)
-}
-```
-
-Response
-
-```
-{
-  game_id: String
-}
-```
-
 ### Query game state
 `GET /api/game/<game_id/`
 

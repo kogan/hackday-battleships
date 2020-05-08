@@ -137,6 +137,9 @@ class BoardState(object):
         self.game_id = game_id
         self.board_size = config["board_size"]
         self.board_state = {}
+        for x in range(self.board_size):
+            for y in range(self.board_size):
+                self.board_state[(x, y)] = None
         self.ships_alive = {x['length']: x['alive'] for x in config["ship_config"]}
         self.history = []
 
@@ -189,7 +192,7 @@ class BoardState(object):
             if (y + ship_size) < self.config["board_size"]:
                 for step in range(ship_size):
                     coord = (x, y + step)
-                    if self.board_state[coord] in ['SUNK', 'MISS']:
+                    if self.board_state[coord] in ['SUNK', 'MISS', 'N/A']:
                         valid_placement = False
                         break
                     up_coordinates.append(coord)
@@ -199,10 +202,10 @@ class BoardState(object):
 
             right_coordinates = []
             valid_placement = True
-            if (y + ship_size) < self.board_size:
+            if (x + ship_size) < self.board_size:
                 for step in range(ship_size):
                     coord = (x + step, y)
-                    if self.board_state[coord] in ['SUNK', 'MISS']:
+                    if self.board_state[coord] in ['SUNK', 'MISS', 'N/A']:
                         valid_placement = False
                         break
                     right_coordinates.append(coord)
@@ -216,12 +219,23 @@ class BoardState(object):
         all_coordinates = []
         for length, count in self.ships_alive.items():
             ship_coordinates = self.enumerate_ship_placements(length)
-            for _ in count:
+            for _ in range(count):
                 all_coordinates += ship_coordinates
-        return Counter(all_coordinates)
+        return all_coordinates
 
     def next_move(self):
-        return self.enumerate_all_placements().most_common(1)[0]
+        all_placements = self.enumerate_all_placements()
+        last_move = self.history[-1]
+        if last_move.result == "HIT":
+            x = last_move.coord[0]
+            y = last_move.coord[0]
+            candidates = []
+            candidates.append((x,y+1))
+            candidates.append((x+1,y))
+            candidates.append((x,y-1))
+            candidates.append((x-1,y-1))
+            all_placements = filter(lambda coord: coord in candidates, all_placements)
+        return Counter(all_placements).most_common(1)[0]
 
 
 def phase_attack(session, url, game_id, config):

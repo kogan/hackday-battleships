@@ -17,6 +17,8 @@ OrientationVertical = "vertical"
 OrientationHorizontal = "horizontal"
 
 print("running carlsen approach")
+
+
 @dataclass
 class DataShip(object):
     x: int
@@ -140,11 +142,11 @@ class BoardState(object):
         for x in range(self.board_size):
             for y in range(self.board_size):
                 self.board_state[(x, y)] = None
-        self.ships_alive = {x['length']: x['alive'] for x in config["ship_config"]}
+        self.ships_alive = {x['length']: x['count'] for x in config["ship_config"]}
         self.history = []
 
     def make_move(self, coord):
-        x,y = coord
+        x, y = coord
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
         self.set_board_state(response.json(), x, y)
         return len(self.ships_alive.keys()) > 0
@@ -179,7 +181,7 @@ class BoardState(object):
             self.board_state[(x, y + c)] = "SUNK"
             c += 1
         else:
-            self.board_state[(x, y+c)] = "MISS"
+            self.board_state[(x, y + c)] = "MISS"
 
         c = 1
         while self.board_state.get((x, y - c)) == "HIT":
@@ -187,7 +189,7 @@ class BoardState(object):
             self.board_state[(x, y - c)] = "SUNK"
             c += 1
         else:
-            self.board_state[(x, y-c)] = "MISS"
+            self.board_state[(x, y - c)] = "MISS"
 
         self.ships_alive[size] = self.ships_alive[size] - 1
         if self.ships_alive[size] == 0:
@@ -234,10 +236,9 @@ class BoardState(object):
 
     def next_move(self):
         all_placements = self.enumerate_all_placements()
-        last_move = self.history[-1]
-        if last_move.result == "HIT":
-            x = last_move.coord[0]
-            y = last_move.coord[0]
+        if self.history and self.history[-1]["result"] == "HIT":
+            x = self.history[-1]["coordinate"][0]
+            y = self.history[-1]["coordinate"][1]
             candidates = []
             candidates.append((x, y + 1))
             candidates.append((x + 1, y))

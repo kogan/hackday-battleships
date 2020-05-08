@@ -319,7 +319,9 @@ class BoardState(object):
                         for move in hit_mode_moves_hit:
                             candidates.append((move["coordinate"][0]+step, move["coordinate"][1]))
 
-            all_placements = filter(lambda coord: coord in candidates, all_placements)
+            all_placements = [coord for coord in filter(lambda coord: coord in candidates, all_placements)]
+            if len(all_placements) == 0:
+                all_placements = self.enumerate_all_placements()
 
         return Counter(all_placements).most_common(1)[0][0]
 

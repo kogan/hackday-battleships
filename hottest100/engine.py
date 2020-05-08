@@ -1,4 +1,5 @@
 import enums
+import random
 import typing as t
 from dataclasses import asdict, dataclass
 
@@ -50,7 +51,8 @@ class Engine:
         return self.our_board
 
     def get_attack(self) -> Point:
-        return Point(0, 0)
+        [x, y] = random.sample(range(self.size), 2)
+        return Point(x, y)
 
     def test(self):
         self.our_board = self.generate_board()

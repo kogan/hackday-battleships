@@ -4,8 +4,7 @@ import statistics
 import typing as t
 from collections import deque
 from copy import deepcopy
-from dataclasses import asdict, dataclass
-from pprint import pprint
+from dataclasses import dataclass
 from urllib.parse import urljoin
 
 SHIP_CONFIG = [
@@ -112,10 +111,7 @@ class Board:
 
     @classmethod
     def empty(cls, size: int):
-        tiles = [
-            [Tile(Point(y, x), state=State.Unknown) for x in range(size)]
-            for y in range(size)
-        ]
+        tiles = [[Tile(Point(y, x), state=State.Unknown) for x in range(size)] for y in range(size)]
         return Board(tiles=tiles, size=size)
 
 
@@ -162,9 +158,7 @@ class ShipPlacer:
                         y = random.randrange(0, size)
 
                     # TODO: collision detection
-                    new_ship = Ship(
-                        position=Point(x, y), length=length, orientation=orientation
-                    )
+                    new_ship = Ship(position=Point(x, y), length=length, orientation=orientation)
                     is_clash = self.clash(size, ships, new_ship)
                     # if is_clash:
                     #    print("clash!")
@@ -272,13 +266,11 @@ class ShipPlacer:
 
         if new_ship.orientation == Orientation.Horizontal:
             new_ship_points = [
-                Point(new_ship.position.x + i, new_ship.position.y)
-                for i in range(new_ship.length)
+                Point(new_ship.position.x + i, new_ship.position.y) for i in range(new_ship.length)
             ]
         else:
             new_ship_points = [
-                Point(new_ship.position.x, new_ship.position.y + j)
-                for j in range(new_ship.length)
+                Point(new_ship.position.x, new_ship.position.y + j) for j in range(new_ship.length)
             ]
 
         # enumerate all existing ship points to see if there's overlap
@@ -421,16 +413,10 @@ class TestCoordinator(Coordinator):
 
     def print_attack(self, point: Point, response: AttackResponse):
         ships = set(self.attack_map.values())
-        print(
-            f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}"
-        )
+        print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
 
     def attack(self, point: Point) -> AttackResponse:
-        if (
-            point in self.attacks
-            or point.x >= self.engine.size
-            or point.y >= self.engine.size
-        ):
+        if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
             response = AttackResponse.Invalid
             self.print_attack(point, response)
             return response

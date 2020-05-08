@@ -1,5 +1,5 @@
 FROM python:3.8-slim
-RUN pip install requests
+RUN pip install requests flask
 WORKDIR /code
-COPY ./main.py /code
-CMD python main.py $PORT
+COPY ./engine.py ./app.py ./config.py /code
+CMD waitress-serve --listen*:$PORT --call "app:create_app"

@@ -50,14 +50,14 @@ def get_occupied_squares(ship):
 def get_surrounding_squares(ship):
     if ship.orientation == OrientationVertical:
         return (
-            get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-            .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 1, ship.orientation))
+            get_squares(ship.x - 1, ship.y - 1, ship.length + 2, ship.orientation)
+            .union(get_squares(ship.x + 1, ship.y - 1, ship.length + 2, ship.orientation))
             .union({(ship.x, ship.y - 1), (ship.x, ship.y + ship.length)})
             .union(get_occupied_squares(ship))
         )
     return (
-        get_squares(ship.x - 1, ship.y - 1, ship.length + 1, ship.orientation)
-        .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 1, ship.orientation))
+        get_squares(ship.x - 1, ship.y - 1, ship.length + 2, ship.orientation)
+        .union(get_squares(ship.x - 1, ship.y + 1, ship.length + 2, ship.orientation))
         .union({(ship.x - 1, ship.y), (ship.x + ship.length, ship.y)})
         .union(get_occupied_squares(ship))
     )

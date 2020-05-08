@@ -229,6 +229,8 @@ class Engine:
     def __init__(self, size=10):
         self.size = size
         self.opponent_board = Board.empty(size=size)
+        points = [ (x,y) for x in [ 2*i+1 for i in range(10>>1) ] for y in [ 2*i for i in range(10>>1) ] ]
+        self.attack_points = set(points).union(map(lambda t: t[::-1], points))
         self.is_attack_mode_target = False
         self.attack_queue = deque()
 
@@ -237,38 +239,11 @@ class Engine:
         return self.our_board
 
     def _attack_get_random_disparate_point_with_state_unknown(self) -> Point:
-        # Try random disparate (i.e. x, y have different parity) point 10 times
-        iterations = 0
-        while iterations < 10:
-            y = random.randint(0, self.size - 1)
-            y_parity = y & 1
-            x = 2 * random.randint(0, (self.size >> 1) - 1) + (y_parity ^ 1)
+        while len(self.attack_points):
+            (x, y) = random.choice(tuple(self.attack_points))
+            self.attack_points.remove((x, y))
             if self.opponent_board.tiles[x][y].state == State.Unknown:
                 return Point(x, y)
-            iterations += 1
-        # Then just walk through disparate points sequentially. This shouldn't
-        # need an iteration count guard, but I'm leaving it, just to be sure
-        # it won't ever get stuck here.
-        iterations = 0
-        while iterations < 10:
-            x += 2
-            if x >= self.size:
-                x = y_parity
-                y_parity ^= 1
-                y = 0 if y == self.size - 1 else y + 1
-            if self.opponent_board.tiles[x][y].state == State.Unknown:
-                return Point(x, y)
-            iterations += 1
-        # If all else fails just walk through points one by one.
-        iterations = 0
-        while iterations < self.size ** 2:
-            x += 1
-            if x == self.size:
-                x = 0
-                y = 0 if y == self.size - 1 else y + 1
-            if self.opponent_board.tiles[x][y].state == State.Unknown:
-                return Point(x, y)
-            iterations += 1
         # If all else fails and more, just return a random point regardless of state.
         [x, y] = random.sample(range(self.size), 2)
         return Point(x, y)

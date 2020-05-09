@@ -413,7 +413,7 @@ class HttpCoordinator:
             urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=point.x, y=point.y)
         )
         response.raise_for_status()
-        data = response.json()
+        data = t.cast(dict, response.json())
         result = data["result"]
         if result == "HIT":
             self.last_hit = True

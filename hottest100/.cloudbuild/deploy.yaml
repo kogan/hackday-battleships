@@ -20,6 +20,8 @@ steps:
       - --platform
       - managed
       - --allow-unauthenticated
+      - --max-instances
+      - 10
       - --region
       - asia-northeast1
       - --image

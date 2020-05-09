@@ -186,7 +186,7 @@ class BoardState(object):
 
     def surrounding_coords(self, coord):
         x, y = coord
-        return filter(self.in_bounds, [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)])
+        return [c for c in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] if self.in_bounds(c)]
 
     def update_sunk_ship(self, x, y):
         self.hit_mode = None
@@ -263,18 +263,15 @@ class BoardState(object):
 
             if valid_placement:
                 coordinates.extend(right)
-
-            # print(f"{x},{y},coordinates={coordinates},down={down},right={right}")
-
         return coordinates
 
-    def enumerate_all_placements(self):
+    def get_coord_probabilities(self):
         all_coordinates = []
         for length, count in self.ships_alive.items():
             ship_coordinates = self.enumerate_ship_placements(length)
             for _ in range(count):
                 all_coordinates += ship_coordinates
-        return all_coordinates
+        return Counter(all_coordinates)
 
     def direction(self, c1, c2):
         x1, y1 = c1
@@ -295,44 +292,50 @@ class BoardState(object):
             return OrientationVertical
         return OrientationHorizontal
 
+    def get_hit_mode_move(self, coord_counter):
+        # prev_coord = self.history[-1]["coordinate"]
+        more_than_one_hit = False
+        hit_coords = []
+        hit_direction = OrientationVertical
+        first_hit_coord = self.history[-1]["coordinate"]
+        first_hit_move_index = len(self.history) - 1
+        if self.hit_mode is not None:
+            (first_hit_coord, first_hit_move_index, hit_direction) = self.hit_mode
+            hit_mode_moves = self.history[first_hit_move_index:]
+            hit_coords = [x['coordinate'] for x in hit_mode_moves if x["result"] == "HIT"]
+            more_than_one_hit = len(hit_coords) > 1
+
+        if not more_than_one_hit:
+            candidates = [x for x in self.surrounding_coords(first_hit_coord) if x in list(coord_counter)]
+            candidates.sort(key=lambda x: coord_counter[x], reverse=True)
+            next_coord = candidates[0]
+            hit_direction = self.direction(next_coord, first_hit_coord)
+            # activate/update hit mode
+            self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
+            return next_coord
+
+        candidates = [x for coord in hit_coords for x in self.get_direction_coords(coord, hit_direction) if
+                      x in list(coord_counter)]
+        if len(candidates) > 0:
+            candidates.sort(key=lambda x: coord_counter[x], reverse=True)
+            next_coord = candidates[0]
+            return next_coord
+
+        # we found no valid candidates in original direction - flip
+        hit_direction = self.opposite_direction(hit_direction)
+        self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
+        candidates = [x for coord in hit_coords for x in
+                      self.get_direction_coords(coord, hit_direction) if x in list(coord_counter)]
+        candidates.sort(key=lambda x: coord_counter[x], reverse=True)
+        next_coord = candidates[0]
+        return next_coord
+
     def next_move(self):
-        all_placements = self.enumerate_all_placements()
-        print(f"unfiltered_move_count={len(all_placements)}")
+        coord_counter = self.get_coord_probabilities()
         print(f"ships_alive={self.ships_alive}")
         if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
-            prev_coord = self.history[-1]["coordinate"]
-            if self.hit_mode is None:
-                candidates = self.surrounding_coords(prev_coord)
-                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
-                random.shuffle(valid_candidates)
-                next_coord = valid_candidates[0]
-                hit_direction = self.direction(next_coord, prev_coord)
-                # activate hit mode
-                self.hit_mode = (prev_coord, len(self.history) - 1, hit_direction)
-                return next_coord
-
-            else:
-                (first_hit_coord, first_hit_move_index, hit_direction) = self.hit_mode
-                hit_mode_moves = self.history[first_hit_move_index:]
-                hit_coords = [x['coordinate'] for x in hit_mode_moves if x["result"] == "HIT"]
-                candidates = [x for coord in hit_coords for x in self.get_direction_coords(coord, hit_direction)]
-                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
-                if len(valid_candidates) > 0:
-                    random.shuffle(valid_candidates)
-                    next_coord = valid_candidates[0]
-                    return next_coord
-
-                # we found no valid candidates in original direction - flip
-                hit_direction = self.opposite_direction(hit_direction)
-                self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
-                candidates = [x for coord in hit_coords for x in
-                              self.get_direction_coords(coord, hit_direction)]
-                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
-                random.shuffle(valid_candidates)
-                next_coord = valid_candidates[0]
-                return next_coord
-
-        return Counter(all_placements).most_common(1)[0][0]
+            return self.get_hit_mode_move(coord_counter)
+        return coord_counter.most_common(1)[0][0]
 
 
 def phase_attack(session, url, game_id, config):

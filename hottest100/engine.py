@@ -1,3 +1,4 @@
+import asyncio
 import enum
 import random
 import statistics
@@ -8,6 +9,8 @@ from collections import deque
 from copy import deepcopy
 from dataclasses import dataclass
 from urllib.parse import urljoin
+
+from httpx import AsyncClient, Response, HTTPError
 
 SHIP_CONFIG = [
     {"count": 1, "length": 5},
@@ -306,10 +309,10 @@ class AttackResponse(enum.Enum):
 
 
 class Coordinator:
-    def attack(self, point: Point) -> AttackResponse:
+    async def attack(self, point: Point) -> AttackResponse:
         return AttackResponse.Win
 
-    def set_placement(self, board: Board) -> bool:
+    async def set_placement(self, board: Board) -> bool:
         return True
 
 
@@ -371,12 +374,12 @@ class Engine:
         else:
             return self._attack_get_random_disparate_point_with_state_unknown()
 
-    def play(self, coordinator: Coordinator, total_opponent_tiles: int):
+    async def play(self, coordinator: Coordinator, total_opponent_tiles: int):
         response = AttackResponse.Miss
         hits = 0
         while hits < total_opponent_tiles:
             attack = self.get_attack()
-            response = coordinator.attack(attack)
+            response = await coordinator.attack(attack)
             tile = self.opponent_board.tiles[attack.x][attack.y]
             if response is AttackResponse.Hit:
                 tile.state = State.Hit
@@ -396,50 +399,51 @@ class Engine:
 
 
 class HttpCoordinator:
-    def __init__(self, session, url, game_id):
+    def __init__(self, session: AsyncClient, url: str, game_id: str):
         self.session = session
         self.url = url
         self.game_id = game_id
         self.moves = 0
         self.last_hit = False
 
-    def attack(self, point: Point) -> AttackResponse:
+    async def attack(self, point: Point) -> AttackResponse:
         if not self.last_hit:
             self.moves += 1
-        response = self.session.post(
+        response = await self.session.post(
             urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=point.x, y=point.y)
         )
         response.raise_for_status()
-        data = response.json()["result"]
-        if data == "HIT":
+        data = response.json()
+        result = data["result"]
+        if result == "HIT":
             self.last_hit = True
             return AttackResponse.Hit
-        elif data == "SUNK":
+        elif result == "SUNK":
             self.last_hit = True
             return AttackResponse.Sunk
-        elif data == "MISS":
+        elif result == "MISS":
             self.last_hit = False
             return AttackResponse.Miss
-        raise ValueError(f"data was not a known value: {data=}")
+        raise ValueError(f"result was not a known value: {result=}")
 
-    def run(self):
+    async def run(self):
         print(f"setting up {self.game_id=}")
         config_url = urljoin(self.url, f"/api/game/{self.game_id}/")
-        response = self.session.get(config_url)
+        response = await self.session.get(config_url)
         response.raise_for_status()
         config = response.json()
         config = config["game"]
         size, ship_config = config["board_size"], config["ship_config"]
         ships = self.get_ships(size, ship_config=ship_config)
         place_url = urljoin(self.url, f"/api/game/{self.game_id}/place/")
-        resp = self.session.post(place_url, json=ships)
+        resp = await self.session.post(place_url, json=ships)
         resp.raise_for_status()
-        self.wait("attack")
+        await self.wait("attack")
         # TODO: Engine accepts a ship_config
         self.engine = engine = Engine(size=size)
         total_opponent_tiles = sum(map(lambda s: s["length"] * s["count"], ship_config))
         print(f"setup complete, attacking {self.game_id=}")
-        engine.play(self, total_opponent_tiles)
+        await engine.play(self, total_opponent_tiles)
         print(f"{self.game_id=} complete in {self.moves=}")
         return engine
 
@@ -456,12 +460,13 @@ class HttpCoordinator:
             for ship in ships
         ]
 
-    def wait(self, state):
+    async def wait(self, state):
         while True:
-            response = self.session.get(urljoin(self.url, f"/api/game/{self.game_id}/")).json()
-            if response["game"]["state"] == state:
+            response = await self.session.get(urljoin(self.url, f"/api/game/{self.game_id}/"))
+            data = response.json()
+            if data["game"]["state"] == state:
                 break
-            time.sleep(1)
+            await asyncio.sleep(1)
 
 
 class TestCoordinator(Coordinator):
@@ -483,7 +488,7 @@ class TestCoordinator(Coordinator):
             ships = set(self.attack_map.values())
             print(f"Attack: {point} | {response} ({len(self.attack_map)} remaining) {ships}")
 
-    def attack(self, point: Point) -> AttackResponse:
+    async def attack(self, point: Point) -> AttackResponse:
         if point in self.attacks or point.x >= self.engine.size or point.y >= self.engine.size:
             response = AttackResponse.Invalid
             self.print_attack(point, response)
@@ -513,23 +518,21 @@ class TestCoordinator(Coordinator):
             self.print_attack(point, response)
         return response
 
-    def run(self):
+    async def run(self):
         hits_required = sum(ship.length for ship in self.ships)
-        self.engine.play(self, hits_required)
+        await self.engine.play(self, hits_required)
 
 
-if __name__ == "__main__":
-    moves = 50 if len(sys.argv) <= 1 else int(sys.argv[1])
+async def test_engine(games: int):
     size = 10
     history: t.List[int] = []
-    debug = True if moves <= 50 else False
+    debug = True if games <= 50 else False
     placer = ShipPlacer()
-    for x in range(moves):
+    for x in range(games):
         ships = placer.random_ships(size=size)
-        hits_required = sum(ship.length for ship in ships)
         engine = Engine(size=size)
         coordinator = TestCoordinator(engine, ships, debug=debug)
-        coordinator.run()
+        await coordinator.run()
         print(f"Game finished with {coordinator.moves} moves")
         print()
         history.append(coordinator.moves)
@@ -537,3 +540,8 @@ if __name__ == "__main__":
     worst = max(history)
     mean = statistics.mean(history)
     print(f"Games: {len(history)} | Move Stats: [+{best}|-{worst}|÷{mean}]")
+
+
+if __name__ == "__main__":
+    games = 50 if len(sys.argv) <= 1 else int(sys.argv[1])
+    asyncio.run(test_engine(games))

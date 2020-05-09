@@ -1,29 +1,20 @@
 import os
 
-import requests
-from flask import Flask, jsonify, request
+import httpx
+from fastapi import FastAPI, Body
 
 from engine import HttpCoordinator
 
 
-def create_app():
-    app = Flask(__name__)
+app = FastAPI()
 
-    @app.route("/", methods=["POST"])
-    def start_game():
-        try:
-            print("start game request")
-            data = request.json
-            token = os.environ.get("GAME_TOKEN")
-            url = data["url"]
-            game_id = data["game_id"]
-            session = requests.Session()
-            session.headers.update(dict(Authorization=f"Token {token}"))
-            coordinator = HttpCoordinator(session, url, game_id)
-            coordinator.run()
-            return jsonify(success=True)
-        except Exception as ex:
-            print("Error: ", str(ex))
-            raise
 
-    return app
+@app.post("/")
+async def start_game(url: str = Body(...), game_id: str = Body(...)):
+    print("start game request")
+    token = os.environ.get("GAME_TOKEN")
+    headers = dict(Authorization=f"Token {token}")
+    async with httpx.AsyncClient(headers=headers) as client:
+        coordinator = HttpCoordinator(client, url, game_id)
+        await coordinator.run()
+    return {}

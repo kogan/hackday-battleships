@@ -233,35 +233,38 @@ class BoardState(object):
         print(f"ships_alive={self.ships_alive}")
 
     def enumerate_ship_placements(self, ship_size):
+        print(f'finding placements for ship size={ship_size}')
         coordinates = []  # list of coordinates with duplicates expected
         for x, y in self.board_state:
-            up_coordinates = []
+            down = []
             valid_placement = True
-            if (y + ship_size) < self.config["board_size"]:
+            if (y + ship_size) <= self.config["board_size"]:
                 for step in range(ship_size):
                     coord = (x, y + step)
                     if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
                     if self.board_state[coord] != "HIT":
-                        up_coordinates.append(coord)
+                        down.append(coord)
 
             if valid_placement:
-                coordinates.extend(up_coordinates)
+                coordinates.extend(down)
 
-            right_coordinates = []
+            right = []
             valid_placement = True
-            if (x + ship_size) < self.board_size:
+            if (x + ship_size) <= self.board_size:
                 for step in range(ship_size):
                     coord = (x + step, y)
                     if self.board_state[coord] in ['SUNK', 'MISS']:
                         valid_placement = False
                         break
                     if self.board_state[coord] != "HIT":
-                        right_coordinates.append(coord)
+                        right.append(coord)
 
             if valid_placement:
-                coordinates.extend(right_coordinates)
+                coordinates.extend(right)
+
+            # print(f"{x},{y},coordinates={coordinates},down={down},right={right}")
 
         return coordinates
 
@@ -293,43 +296,43 @@ class BoardState(object):
         return OrientationHorizontal
 
     def next_move(self):
-            all_placements = self.enumerate_all_placements()
-            print(f"unfiltered_move_count={len(all_placements)}")
-            print(f"ships_alive={self.ships_alive}")
-            if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
-                prev_coord = self.history[-1]["coordinate"]
-                if self.hit_mode is None:
-                    candidates = self.surrounding_coords(prev_coord)
-                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
-                    random.shuffle(valid_candidates)
-                    next_coord = valid_candidates[0]
-                    hit_direction = self.direction(next_coord, prev_coord)
-                    # activate hit mode
-                    self.hit_mode = (prev_coord, len(self.history) - 1, hit_direction)
-                    return next_coord
+        all_placements = self.enumerate_all_placements()
+        print(f"unfiltered_move_count={len(all_placements)}")
+        print(f"ships_alive={self.ships_alive}")
+        if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
+            prev_coord = self.history[-1]["coordinate"]
+            if self.hit_mode is None:
+                candidates = self.surrounding_coords(prev_coord)
+                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                random.shuffle(valid_candidates)
+                next_coord = valid_candidates[0]
+                hit_direction = self.direction(next_coord, prev_coord)
+                # activate hit mode
+                self.hit_mode = (prev_coord, len(self.history) - 1, hit_direction)
+                return next_coord
 
-                else:
-                    (first_hit_coord, first_hit_move_index, hit_direction) = self.hit_mode
-                    hit_mode_moves = self.history[first_hit_move_index:]
-                    hit_coords = [x['coordinate'] for x in hit_mode_moves if x["result"] == "HIT"]
-                    candidates = [x for coord in hit_coords for x in self.get_direction_coords(coord, hit_direction)]
-                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
-                    if len(valid_candidates) > 0:
-                        random.shuffle(valid_candidates)
-                        next_coord = valid_candidates[0]
-                        return next_coord
-
-                    # we found no valid candidates in original direction - flip
-                    hit_direction = self.opposite_direction(hit_direction)
-                    self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
-                    candidates = [x for coord in hit_coords for x in
-                                  self.get_direction_coords(coord, hit_direction)]
-                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+            else:
+                (first_hit_coord, first_hit_move_index, hit_direction) = self.hit_mode
+                hit_mode_moves = self.history[first_hit_move_index:]
+                hit_coords = [x['coordinate'] for x in hit_mode_moves if x["result"] == "HIT"]
+                candidates = [x for coord in hit_coords for x in self.get_direction_coords(coord, hit_direction)]
+                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                if len(valid_candidates) > 0:
                     random.shuffle(valid_candidates)
                     next_coord = valid_candidates[0]
                     return next_coord
 
-            return Counter(all_placements).most_common(1)[0][0]
+                # we found no valid candidates in original direction - flip
+                hit_direction = self.opposite_direction(hit_direction)
+                self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
+                candidates = [x for coord in hit_coords for x in
+                              self.get_direction_coords(coord, hit_direction)]
+                valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                random.shuffle(valid_candidates)
+                next_coord = valid_candidates[0]
+                return next_coord
+
+        return Counter(all_placements).most_common(1)[0][0]
 
 
 def phase_attack(session, url, game_id, config):

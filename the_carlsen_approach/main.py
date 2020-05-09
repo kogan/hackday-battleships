@@ -245,7 +245,11 @@ class BoardState(object):
                         valid_placement = False
                         break
                     if self.board_state[coord] != "HIT":
-                        down.append(coord)
+                        for _ in range(ship_size):
+                            down.append(coord)
+                        surrounding_hits = [x for x in self.surrounding_coords(coord) if self.board_state[x] == "HIT"]
+                        for _ in range(len(surrounding_hits) * 10 * ship_size):
+                            down.append(coord)
 
             if valid_placement:
                 coordinates.extend(down)
@@ -259,7 +263,11 @@ class BoardState(object):
                         valid_placement = False
                         break
                     if self.board_state[coord] != "HIT":
-                        right.append(coord)
+                        for _ in range(ship_size):
+                            right.append(coord)
+                        surrounding_hits = [x for x in self.surrounding_coords(coord) if self.board_state[x] == "HIT"]
+                        for _ in range(len(surrounding_hits) * 10 * ship_size):
+                            down.append(coord)
 
             if valid_placement:
                 coordinates.extend(right)

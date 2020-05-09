@@ -6,7 +6,7 @@ import time
 from collections import Counter
 from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from urllib.parse import urljoin
 
 import aiohttp
@@ -165,7 +165,6 @@ async def phase_attack(session, url, game_id, config):
 
     ship_found = False
     ship_hit = None
-    tried = 0
 
     while num_hit < expected_hits:
         if not ship_found:
@@ -211,6 +210,11 @@ async def phase_attack(session, url, game_id, config):
     print_attack_board(board_state)
     print("Num turns:", turns)
     print("Score:", turns - num_hit)
+
+    print("---------------")
+    print("Current heatmap")
+    print_heatmap(RUNNING_HEAT_MAP, RUNNING_HEAT_MAP_SIZE)
+    print("")
 
 
 def hit_hunter(board_state, start_coords):
@@ -413,13 +417,31 @@ def train(ship_config, board_size):
             for x, y in get_occupied_squares(ship):
                 mark_hit_on_heatmap(x, y)
 
-    top = dict(RUNNING_HEAT_MAP.most_common(30))
+    top = dict(RUNNING_HEAT_MAP.most_common(50))
     max_val = max(top.values())
     min_val = min(top.values())
     export_data = Counter()
     for key, val in top.items():
         export_data[key] = int(((val - min_val) / (max_val - min_val)) * 10) + 10
     print(export_data)
+
+    print("Raw heatmap")
+    print_heatmap(RUNNING_HEAT_MAP, board_size)
+    print("")
+    print("Normalised heatmap")
+    print_heatmap(export_data, board_size)
+    print(export_data)
+
+
+def print_heatmap(data: Dict[Tuple[int, int], int], board_size: int):
+    max_val = max(data.values())
+    min_val = min(data.values())
+    vis = [["  " for _ in range(board_size)] for _ in range(board_size)]
+    symbolrange = ".░▒▓█"
+    for (x, y), val in data.items():
+        mapped = int(((val - min_val) / (max_val - min_val)) * (len(symbolrange) - 1))
+        vis[y][x] = symbolrange[mapped] * 2
+    print("\n".join("".join(x) for x in vis))
 
 
 if __name__ == "__main__":

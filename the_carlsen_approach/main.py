@@ -267,7 +267,7 @@ class BoardState(object):
                             right.append(coord)
                         surrounding_hits = [x for x in self.surrounding_coords(coord) if self.board_state[x] == "HIT"]
                         for _ in range(len(surrounding_hits) * 10 * ship_size):
-                            down.append(coord)
+                            right.append(coord)
 
             if valid_placement:
                 coordinates.extend(right)

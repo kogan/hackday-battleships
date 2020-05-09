@@ -153,6 +153,15 @@ class BoardState(object):
         self.history = []
         self.hit_mode = None
 
+    def __repr__(self):
+        repr = ''
+        symbol_map = {'SUNK': 'S', 'HIT': 'H', 'MISS': 'M', None: '-'}
+        for y in range(self.board_size):
+            for x in range(self.board_size):
+                repr += symbol_map[self.board_state[(x, y)]] + ' '
+            repr += '\n'
+        return repr
+
     def make_move(self, coord):
         x, y = coord
         response = self.session.post(urljoin(self.url, f"/api/game/{self.game_id}/attack/"), json=dict(x=x, y=y))
@@ -170,8 +179,6 @@ class BoardState(object):
         if response["result"] == "SUNK":
             self.board[x][y] = " S "
             self.update_sunk_ship(x, y)
-
-        print_2d_array(self.board)
 
     def in_bounds(self, coord):
         x, y = coord
@@ -202,24 +209,21 @@ class BoardState(object):
         while self.board_state.get((x, y + c)) == "HIT":
             size += 1
             self.board_state[(x, y + c)] = "SUNK"
-            self.board[x][y + c ] = " S "
+            self.board[x][y + c] = " S "
             c += 1
 
         c = 1
         while self.board_state.get((x, y - c)) == "HIT":
             size += 1
             self.board_state[(x, y - c)] = "SUNK"
-            self.board[x][y - c ] = " S "
+            self.board[x][y - c] = " S "
             c += 1
-
-
 
         for coord in self.board_state:
             is_sunk_in_surrrounding = any([self.board_state[x] == "SUNK" for x in self.surrounding_coords(coord)])
             if self.board_state[coord] not in ["SUNK", "HIT"] and is_sunk_in_surrrounding:
                 self.board_state[coord] = "MISS"
                 self.board[coord[0]][coord[1]] = ' o '
-
 
         self.ships_alive[size] = self.ships_alive[size] - 1
         print(f"sunk_ship_size={size}")
@@ -262,7 +266,6 @@ class BoardState(object):
         return coordinates
 
     def enumerate_all_placements(self):
-        print(f"board_state={self.board_state}")
         all_coordinates = []
         for length, count in self.ships_alive.items():
             ship_coordinates = self.enumerate_ship_placements(length)
@@ -270,15 +273,19 @@ class BoardState(object):
                 all_coordinates += ship_coordinates
         return all_coordinates
 
+    def direction(self, c1, c2):
+        x1, y1 = c1
+        x2, y2 = c2
+        if x1 - x2 != 0:
+            return OrientationHorizontal
+        return OrientationVertical
 
-    def direction(self,moves, first_hit_coord):
-        for move in moves:
-            if move["coordinate"][0] != first_hit_coord[0] and move["coordinate"][1] != first_hit_coord[1]:
-                x_diff = move["coordinate"][0] - first_hit_coord[0]
-                if x_diff != 0:
-                    return OrientationHorizontal
-                return OrientationVertical
-        return None
+    def get_direction_coords(self, coord, direction):
+        x, y = coord
+        coords = [(x - 1, y), (x + 1, y)]
+        if direction == OrientationVertical:
+            coords = [(x, y - 1), (x, y + 1)]
+        return [x for x in coords if self.in_bounds(x)]
 
     def opposite_direction(self, direction):
         if direction == OrientationHorizontal:
@@ -286,58 +293,44 @@ class BoardState(object):
         return OrientationHorizontal
 
     def next_move(self):
-        try:
             all_placements = self.enumerate_all_placements()
             print(f"unfiltered_move_count={len(all_placements)}")
             print(f"ships_alive={self.ships_alive}")
             if self.hit_mode or (self.history and self.history[-1]["result"] == "HIT"):
                 prev_coord = self.history[-1]["coordinate"]
                 if self.hit_mode is None:
+                    candidates = self.surrounding_coords(prev_coord)
+                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                    random.shuffle(valid_candidates)
+                    next_coord = valid_candidates[0]
+                    hit_direction = self.direction(next_coord, prev_coord)
                     # activate hit mode
-                    self.hit_mode = (prev_coord, len(self.history) - 1)
-                    x, y = prev_coord
-                    candidates = []
-                    candidates.append((x, y + 1))
-                    candidates.append((x + 1, y))
-                    candidates.append((x, y - 1))
-                    candidates.append((x - 1, y))
+                    self.hit_mode = (prev_coord, len(self.history) - 1, hit_direction)
+                    return next_coord
 
                 else:
-                    (first_hit_coord, first_hit_move_index) = self.hit_mode
+                    (first_hit_coord, first_hit_move_index, hit_direction) = self.hit_mode
                     hit_mode_moves = self.history[first_hit_move_index:]
-                    hit_mode_moves_hit = [x for x in hit_mode_moves if x["result"] == "HIT"]
-                    hit_mode_moves_miss = [x for x in hit_mode_moves if x["result"] == "MISS"]
+                    hit_coords = [x['coordinate'] for x in hit_mode_moves if x["result"] == "HIT"]
+                    candidates = [x for coord in hit_coords for x in self.get_direction_coords(coord, hit_direction)]
+                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                    if len(valid_candidates) > 0:
+                        random.shuffle(valid_candidates)
+                        next_coord = valid_candidates[0]
+                        return next_coord
 
-                    direction = self.direction(hit_mode_moves_hit, first_hit_coord)
-                    if direction is None:
-                        direction = self.opposite_direction(self.direction(hit_mode_moves_miss, first_hit_coord))
-
-                    print(f"hit_mode_direction={direction}")
-                    if direction == OrientationVertical:
-                        candidates = []
-                        for step in [-1,1]:
-                            for move in hit_mode_moves_hit:
-                                candidates.append((move["coordinate"][0], move["coordinate"][1]+step))
-                    else:
-                        candidates = []
-                        for step in [-1,1]:
-                            for move in hit_mode_moves_hit:
-                                candidates.append((move["coordinate"][0]+step, move["coordinate"][1]))
-                valid_candidates = [coord for coord in candidates if self.in_bounds(coord) and self.board_state[coord] is None]
-                random.shuffle(valid_candidates)
-                print(f"valid_candidate_count={len(valid_candidates)}")
-                if len(valid_candidates) != 0:
-                    return valid_candidates[0]
-                self.hit_mode = None
+                    # we found no valid candidates in original direction - flip
+                    hit_direction = self.opposite_direction(hit_direction)
+                    self.hit_mode = (first_hit_coord, first_hit_move_index, hit_direction)
+                    candidates = [x for coord in hit_coords for x in
+                                  self.get_direction_coords(coord, hit_direction)]
+                    valid_candidates = [coord for coord in candidates if self.board_state[coord] is None]
+                    random.shuffle(valid_candidates)
+                    next_coord = valid_candidates[0]
+                    return next_coord
 
             return Counter(all_placements).most_common(1)[0][0]
 
-        except Exception as e:
-            print(f"exception={e}")
-            sys.stdout.write("EXCEPTION #############################")
-            for k,v in self.board_state.items():
-                if v is None:
-                    return k
 
 def phase_attack(session, url, game_id, config):
     """
@@ -346,9 +339,8 @@ def phase_attack(session, url, game_id, config):
     bs = BoardState()
     bs.init(session, url, game_id, config)
     next_move = bs.next_move()
-    print(f"next_move={next_move}")
-    print(f"move_number={len(bs.history)}")
     while bs.make_move(next_move):
+        print(f"{bs}")
         print(f"hit_mode={bs.hit_mode}")
         print(f"next_move={next_move}")
         print(f"move_number={len(bs.history)}")

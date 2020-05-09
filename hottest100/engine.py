@@ -461,11 +461,13 @@ class HttpCoordinator:
         ]
 
     async def wait(self, state):
-        while True:
+        retries = 0
+        while (retries := retries + 1) <= 5:
             response = await self.session.get(urljoin(self.url, f"/api/game/{self.game_id}/"))
-            data = response.json()
-            if data["game"]["state"] == state:
-                break
+            if response.status_code == 200:
+                data = response.json()
+                if data["game"]["state"] == state:
+                    break
             await asyncio.sleep(1)
 
 

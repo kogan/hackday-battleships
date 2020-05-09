@@ -1,6 +1,6 @@
 # Hottest 100 Engine
 
-Presented by J J J
+Presented by JJJ
 
 Jesse
 Jonas

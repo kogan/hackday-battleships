@@ -18,3 +18,8 @@ async def start_game(url: str = Body(...), game_id: str = Body(...)):
         coordinator = HttpCoordinator(client, url, game_id)
         await coordinator.run()
     return {}
+
+
+@app.get("/")
+async def hello():
+    return {"team": "hottest 100"}

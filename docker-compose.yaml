@@ -59,14 +59,18 @@ services:
 
   hottest100:
     build: ./hottest100
+    command: uvicorn app:app --workers 2 --port 80 --host 0.0.0.0 --reload
     environment:
       GAME_TOKEN: ${GAME_TOKEN_JJJ}
       PORT: 80
       PYTHONUNBUFFERED: 1
+    ports:
+      - "8649:80"
     volumes:
       - ./hottest100:/code
     links:
       - django
+
   oh_ship:
     build: ./oh_ship!
     environment:

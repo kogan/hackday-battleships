@@ -20,6 +20,18 @@ SHIP_CONFIG = [
 ]
 
 
+class GameError(Exception):
+    pass
+
+
+class EngineError(GameError):
+    pass
+
+
+class ServerError(GameError):
+    pass
+
+
 class Orientation(enum.Enum):
     Vertical = "vertical"
     Horizontal = "horizontal"
@@ -438,7 +450,9 @@ class HttpCoordinator:
         place_url = urljoin(self.url, f"/api/game/{self.game_id}/place/")
         resp = await self.session.post(place_url, json=ships)
         resp.raise_for_status()
-        await self.wait("attack")
+        ready = await self.wait("attack")
+        if not ready:
+            raise ServerError("Server didn't transition into attack phase")
         # TODO: Engine accepts a ship_config
         self.engine = engine = Engine(size=size)
         total_opponent_tiles = sum(map(lambda s: s["length"] * s["count"], ship_config))
@@ -460,15 +474,16 @@ class HttpCoordinator:
             for ship in ships
         ]
 
-    async def wait(self, state):
+    async def wait(self, state) -> bool:
         retries = 0
-        while (retries := retries + 1) <= 5:
+        while (retries := retries + 1) <= 15:
             response = await self.session.get(urljoin(self.url, f"/api/game/{self.game_id}/"))
             if response.status_code == 200:
                 data = response.json()
                 if data["game"]["state"] == state:
-                    break
-            await asyncio.sleep(1)
+                    return True
+            await asyncio.sleep(2)
+        return False
 
 
 class TestCoordinator(Coordinator):

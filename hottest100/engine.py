@@ -38,7 +38,7 @@ class Orientation(enum.Enum):
 
 
 class State(enum.Enum):
-    Unknown = "  "
+    Unknown = "❓"
     Hit = "💥"
     Empty = "🌊"
 

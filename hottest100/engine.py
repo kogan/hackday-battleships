@@ -531,6 +531,7 @@ if __name__ == "__main__":
         coordinator = TestCoordinator(engine, ships, debug=debug)
         coordinator.run()
         print(f"Game finished with {coordinator.moves} moves")
+        print()
         history.append(coordinator.moves)
     best = min(history)
     worst = max(history)

@@ -293,7 +293,6 @@ class BoardState(object):
         return OrientationHorizontal
 
     def get_hit_mode_move(self, coord_counter):
-        # prev_coord = self.history[-1]["coordinate"]
         more_than_one_hit = False
         hit_coords = []
         hit_direction = OrientationVertical

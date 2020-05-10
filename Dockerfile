@@ -26,6 +26,17 @@ RUN mkdir -p ${HOME}/.config/pypoetry/ && \
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-root ${PRODUCTION:+--no-dev}
 
+# Frontend
+FROM node:12 as jsdeps
+WORKDIR /app
+
+COPY admirals-bridge/package.json admirals-bridge/yarn.lock ./
+RUN yarn install
+
+COPY admirals-bridge/public ./public
+COPY admirals-bridge/src ./src
+
+RUN yarn run build:parcel
 
 # put everything together
 # Copy deps over from previous layer, and run the app.
@@ -33,9 +44,12 @@ RUN poetry install --no-root ${PRODUCTION:+--no-dev}
 FROM python:3.8-slim
 WORKDIR /app
 
-COPY --from=pydeps /app/.venv /app/.venv/
-
 COPY . ./code
+
+COPY --from=pydeps /app/.venv /app/.venv/
+RUN mkdir -p /app/code/static
+COPY --from=jsdeps /app/build/ /app/code/static/
+
 # Explicitly put our code on PYTHONPATH to avoid having to install poetry and
 # activiate it on this layer.
 ENV PYTHONPATH=/app/code

@@ -1,7 +1,16 @@
 from django.contrib import admin
 from django.urls import path
 
-from .views import attack, create_game, finish_game, game_status, join_game, place_ships, players
+from .views import (
+    attack,
+    create_game,
+    finish_game,
+    game_status,
+    join_game,
+    place_ships,
+    players,
+    ReactView,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -12,4 +21,5 @@ urlpatterns = [
     path("api/game/<uuid:game_id>/attack/", attack),
     path("api/game/<uuid:game_id>/finish/", finish_game),
     path("api/player/", players),
+    path("", ReactView.as_view()),
 ]

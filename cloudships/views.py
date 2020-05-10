@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
+from django.views.generic import TemplateView
 
 
 class ShipConfigSerializer(serializers.Serializer):
@@ -150,3 +151,7 @@ def finish_game(request, game_id=None):
         return JsonResponse(dict())
     except GameException as e:
         return JsonResponse(dict(errors=[str(e)]), status=400)
+
+
+class ReactView(TemplateView):
+    template_name = "index.html"

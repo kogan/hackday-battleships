@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "cloudships",
     "django_extensions",
     "corsheaders",
+    "webpack_loader",
 ]
 
 MIDDLEWARE = [
@@ -91,6 +92,7 @@ STATIC_URL = "/static/"
 MEDIA_ROOT = "media/"  # where files are stored on the local FS (in this case)
 MEDIA_URL = "/media/"  # what is prepended to the image URL (in this case)
 
+STATICFILES_DIRS = (os.path.join(root, "app/code/static"),)
 
 ROOT_URLCONF = "cloudships.urls"
 

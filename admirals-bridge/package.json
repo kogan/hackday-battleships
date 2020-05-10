@@ -7,7 +7,8 @@
     "@storybook/addon-links": "^5.3.18",
     "@storybook/addons": "^5.3.18",
     "@storybook/preset-create-react-app": "^2.1.1",
-    "@storybook/react": "^5.3.18"
+    "@storybook/react": "^5.3.18",
+    "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
     "@testing-library/jest-dom": "^4.2.4",
@@ -25,6 +26,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "start:parcel": "parcel watch src/index.js -d build/ --public-url /static",
+    "build:parcel": "parcel build src/index.js -d build/ --public-url /static --no-content-hash",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "storybook": "start-storybook -p 9009 -s public",

@@ -47,13 +47,13 @@ services:
       - django
 
   player2:
-    build: ./example_client
+    build: ./the_carlsen_approach
     environment:
       GAME_TOKEN: ${GAME_TOKEN_P2}
       PORT: 80
       PYTHONUNBUFFERED: 1
     volumes:
-      - ./example_client:/code
+      - ./the_carlsen_approach:/code
     links:
       - django
 

@@ -1,17 +1,27 @@
 import React from 'react'
 import Graph from '../Graph'
 const NUM_PLAYERS = 2
+const STOP = 60
 
 export default class GraphWrapper extends React.Component {
   state = {
     wins: {
       x: ["Player 1", 'Player 2'],
-      y: [0, 0], 
-      // name: 'Player 1',
-      // line: {
-      //   width: 5
-      // }
-      type: 'bar'
+      y: [0, 0],
+      type: 'bar',
+      text: ["0", "0"],
+      textposition: 'auto',
+      textfont: {
+        size: 20
+      },
+      marker: {
+        color: 'rgb(30,72,30)',
+        opacity: 0.7,
+        line: {
+          color: 'white',
+          width: 1.5
+        }
+      }
     },
     layout: {
       datarevision: 0
@@ -46,18 +56,26 @@ export default class GraphWrapper extends React.Component {
 
   increaseGraphic = () => {
     this.setState((state) => {
-      const { wins } = state
+      const { wins, revision } = state
+      if(revision >= STOP) {
+        return { 
+          intervalFunc: null,
+          isDataUpating: false
+        }
+      }
       const playerWinner = this.rand()
       const previous1 = wins.y[0]
       const previous2 = wins.y[1]
+      const y = [previous1 + (playerWinner ? 1 : 0), previous2 + (playerWinner ? 0 : 1)]
       return {
-        revision: this.state.revision + 1,
+        revision: revision + 1,
         wins: {
-          ...state.wins,
-          y: [previous1 + (playerWinner ? 1 : 0), previous2 + (playerWinner ? 0 : 1)]
+          ...wins,
+          y,
+          text: y.map(String)
         },
         layout: {
-          datarevision: this.state.revision + 1
+          datarevision: revision + 1
         }
       }
      })

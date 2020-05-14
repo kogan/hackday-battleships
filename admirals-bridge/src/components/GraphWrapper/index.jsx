@@ -4,21 +4,14 @@ const NUM_PLAYERS = 2
 
 export default class GraphWrapper extends React.Component {
   state = {
-    player1: {
-      x: [0],
-      y: [0], 
-      name: 'Player 1',
-      line: {
-        width: 5
-      }
-    },
-    player2: {
-      x: [0],
-      y: [0],
-      name: 'Player 2',
-      line: {
-        width: 5
-      }
+    wins: {
+      x: ["Player 1", 'Player 2'],
+      y: [0, 0], 
+      // name: 'Player 1',
+      // line: {
+      //   width: 5
+      // }
+      type: 'bar'
     },
     layout: {
       datarevision: 0
@@ -26,9 +19,6 @@ export default class GraphWrapper extends React.Component {
     revision: 0,
     isDataUpating: false,
     intervalFunc: null,
-  }
-  constructor(props) {
-    super(props)
   }
 
   startStop = () => {
@@ -55,42 +45,31 @@ export default class GraphWrapper extends React.Component {
   }
 
   increaseGraphic = () => {
-    const { player1, player2, layout, revision } = this.state;
-
-    const playerWinner = this.rand()
-  
-    const previous1 = player1.y[player1.y.length-1]
-    const previous2 = player2.y[player2.y.length-1]
-
-    player1.x.push(revision);
-    player2.x.push(revision);
-
-    player1.y.push(previous1 + (playerWinner ? 1 : 0));
-    
-    player2.y.push(previous2 + (playerWinner ? 0 : 1));
-
-    if (player1.x.length >= 10) {
-      player1.x.shift();
-      player1.y.shift();
-    }
-    if (player2.x.length >= 10) {
-      player2.x.shift();
-      player2.y.shift();
-    }
-    this.setState({ revision: this.state.revision + 1 });
-    layout.datarevision = this.state.revision + 1;
+    this.setState((state) => {
+      const { wins } = state
+      const playerWinner = this.rand()
+      const previous1 = wins.y[0]
+      const previous2 = wins.y[1]
+      return {
+        revision: this.state.revision + 1,
+        wins: {
+          ...state.wins,
+          y: [previous1 + (playerWinner ? 1 : 0), previous2 + (playerWinner ? 0 : 1)]
+        },
+        layout: {
+          datarevision: this.state.revision + 1
+        }
+      }
+     })
   }
 
   render() {
-    const { player1, player2, layout } = this.state
+    const { wins, layout } = this.state
     return (
       <div>
         <button onClick={this.startStop}>Start / Stop</button>
         <Graph
-          data={[
-            player1,
-            player2
-          ]}
+          data={[wins]}
           layout={layout}
         />
       </div>

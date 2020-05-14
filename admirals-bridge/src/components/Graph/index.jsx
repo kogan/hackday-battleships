@@ -27,25 +27,25 @@ export default class Graph extends React.Component {
           images: [
             {
               "source": ship,
-              "xref": "paper",
-              "yref": "paper",
-              "x": 0.25,
-              "y": player1Y / 50,
-              "sizex": 0.3,
-              "sizey": 0.3,
+              "xref": "x",
+              "yref": "y",
+              "x": 0,
+              "y": player1Y,
+              "sizex": 20,
+              "sizey": 20,
               "xanchor": "center",
               "yanchor": "bottom"
             },
             {
-              "source": "https://images.plot.ly/language-icons/api-home/js-logo.png",
+              "source": ship,
               "xref": "x",
               "yref": "y",
-              "x": 0.75,
+              "x": 1,
               "y": player2Y,
-              "sizex": 1,
-              "sizey": 1,
+              "sizex": 20,
+              "sizey": 20,
               "xanchor": "center",
-              "yanchor": "center"
+              "yanchor": "bottom"
             }
           ],
           autosize: true,

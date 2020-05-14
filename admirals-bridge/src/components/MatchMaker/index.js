@@ -34,7 +34,7 @@ const MatchMaker = () => {
     })
   }
 
-  if (selectedPlayers.length == 0) {
+  if (selectedPlayers.length === 0) {
     return (
       <Fragment>
         Please select player to battle in the settings first.

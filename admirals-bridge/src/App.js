@@ -92,7 +92,7 @@ function App() {
         players: response,
       });
     }
-  }, [response, setState]);
+  }, [response, setState, state]);
   return (
     <StateContext.Provider value={state}>
       <Router>
